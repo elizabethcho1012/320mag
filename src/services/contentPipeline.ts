@@ -381,15 +381,35 @@ export async function collectAllCategories(
 
 /**
  * 특정 시간에 자동 실행되는 스케줄러 (cron job용)
+ * 요일별 카테고리 순환 방식 사용
  */
 export async function scheduledCollection(openaiApiKey?: string, anthropicApiKey?: string) {
   console.log(`\n⏰ 자동 수집 시작 - ${new Date().toLocaleString('ko-KR')}`);
 
-  const results = await collectAllCategories(5, openaiApiKey, anthropicApiKey);
+  const result = await dailyRotationCollection(openaiApiKey, anthropicApiKey);
 
   // 결과 로깅
-  const totalArticles = Object.values(results).reduce((sum, r) => sum + r.success, 0);
-  console.log(`\n✅ 자동 수집 완료 - 총 ${totalArticles}개 아티클 추가됨`);
+  console.log(`\n✅ 자동 수집 완료 - 총 ${result.success}개 아티클 추가됨`);
+
+  // collectAllCategories와 호환되는 형식으로 반환
+  const today = new Date().getDay();
+  const schedule = WEEKLY_SCHEDULE[today];
+  const results: Record<string, CollectionResult> = {};
+
+  // 각 카테고리별로 결과를 분리 (로깅 호환성을 위해)
+  schedule.categories.forEach((category) => {
+    results[category] = {
+      success: 0,
+      failed: 0,
+      articles: [],
+      errors: []
+    };
+  });
+
+  // 전체 성공/실패를 첫 번째 카테고리에 할당 (간단한 구현)
+  if (schedule.categories.length > 0) {
+    results[schedule.categories[0]] = result;
+  }
 
   return results;
 }
