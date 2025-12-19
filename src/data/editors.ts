@@ -430,19 +430,21 @@ BBC에서 20년간 국제뉴스를 보도했으며, 나이와 무관하게 누�
   // 14. 시니어시장 - 헨리 (이미 위에 추가됨)
 ];
 
-// 카테고리별 에디터 매핑 (13개 카테고리)
+// 카테고리별 에디터 매핑 (NEW SEXY 15개 카테고리)
 export const editorsByCategory = {
   '패션': aiEditors.find(e => e.id === 'fashion-sophia')!,
   '뷰티': aiEditors.find(e => e.id === 'beauty-jane')!,
-  '컬처': aiEditors.find(e => e.id === 'culture-martin')!,
+  '컬처': aiEditors.find(e => e.id === 'culture-martin')!, // 레거시 호환
   '여행': aiEditors.find(e => e.id === 'travel-clara')!,
   '시니어시장': aiEditors.find(e => e.id === 'senior-henry')!,
   '글로벌트렌드': aiEditors.find(e => e.id === 'global-marcus')!,
   '푸드': aiEditors.find(e => e.id === 'food-antoine')!,
+  '글로벌푸드': aiEditors.find(e => e.id === 'food-antoine')!, // Antoine이 글로벌푸드도 담당
+  '건강푸드': aiEditors.find(e => e.id === 'food-antoine')!, // Antoine이 건강푸드도 담당 (임시)
   '하우징': aiEditors.find(e => e.id === 'housing-thomas')!,
-  '섹슈얼리티': aiEditors.find(e => e.id === 'intimacy-dr-sarah')!,
+  '섹슈얼리티': aiEditors.find(e => e.id === 'intimacy-dr-sarah')!, // NEW SEXY 핵심
   '심리': aiEditors.find(e => e.id === 'psychology-rebecca')!,
-  '운동': aiEditors.find(e => e.id === 'exercise-mark')!,
+  '운동': aiEditors.find(e => e.id === 'exercise-mark')!, // NEW SEXY 핵심
   '라이프스타일': aiEditors.find(e => e.id === 'editor-elizabeth')!,
   '편집장': aiEditors.find(e => e.id === 'editor-elizabeth')!,
 };
