@@ -46,7 +46,7 @@ const Header: React.FC<HeaderProps> = ({
     { id: 'travel', label: 'TRAVEL' },
     { id: 'lifestyle', label: 'LIFESTYLE' },
     { id: 'housing', label: 'HOUSING' },
-    { id: 'global-trends', label: 'GLOBAL TRENDS' }
+    { id: 'global-trends', label: 'TRENDS' }
   ];
 
   const handleLogin = async () => {
