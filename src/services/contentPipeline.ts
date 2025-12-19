@@ -334,12 +334,15 @@ export async function collectAllCategories(
   const categories = [
     '패션',
     '뷰티',
-    '컬처',
     '여행',
     '시니어시장',
     '글로벌트렌드',
-    '푸드',
+    '글로벌푸드',
+    '건강푸드',
     '하우징',
+    '심리',
+    '섹슈얼리티',
+    '운동',
   ];
 
   const results: Record<string, CollectionResult> = {};
@@ -426,25 +429,25 @@ const WEEKLY_SCHEDULE: Record<number, { categories: string[]; counts: number[] }
     categories: ['패션', '뷰티'],
     counts: [2, 1]
   },
-  2: { // 화요일 - 컬처 & 여행
-    categories: ['컬처', '여행'],
+  2: { // 화요일 - 여행 & 뷰티
+    categories: ['여행', '뷰티'],
     counts: [2, 1]
   },
-  3: { // 수요일 - 푸드 & 하우징
-    categories: ['푸드', '하우징'],
+  3: { // 수요일 - 글로벌푸드 & 하우징
+    categories: ['글로벌푸드', '하우징'],
     counts: [2, 1]
   },
-  4: { // 목요일 - 글로벌트렌드 & 시니어시장
-    categories: ['글로벌트렌드', '시니어시장'],
+  4: { // 목요일 - 글로벌트렌드 & 뷰티
+    categories: ['글로벌트렌드', '뷰티'],
     counts: [2, 1]
   },
   5: { // 금요일 - 심리 & 섹슈얼리티
     categories: ['심리', '섹슈얼리티'],
     counts: [2, 1]
   },
-  6: { // 토요일 - 운동 & 의료
-    categories: ['운동', '의료'],
-    counts: [2, 1]
+  6: { // 토요일 - 운동 & 섹슈얼리티 & 건강푸드
+    categories: ['운동', '섹슈얼리티', '건강푸드'],
+    counts: [1, 1, 1]
   }
 };
 
