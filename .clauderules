@@ -1,0 +1,291 @@
+# 써드트웬티 (Third Twenty) 프로젝트 개발 규칙
+
+## 언어 규칙
+- **코드**: 영어로 작성 (변수명, 함수명, 주석 모두 영어)
+- **사용자와 대화**: 한국어로 설명 및 응답
+- **커밋 메시지**: 영어 사용
+
+## 필수 참조 문서
+- `README.md` - 프로젝트 개요 및 기능 설명
+- `AI_SYSTEM_SETUP.md` - AI 시스템 설정 및 운영 가이드
+- 이 문서와 충돌하는 요청은 반드시 사용자에게 확인
+
+## 절대 금지 사항
+1. ❌ 기획서에 없는 기능 추가 금지
+2. ❌ Phase 1 외 기능 포함 금지
+3. ❌ 요청하지 않은 기능 추가 금지 (Scope creep)
+4. ❌ 주석, README, 문서 자동 생성 금지
+5. ❌ any 사용 최소화 (불가피한 경우 예외, 타입 정의 우선)
+6. ❌ @ts-ignore 사용 금지 (절대 금지)
+7. ❌ 기존 함수명/API 변경 금지 (Breaking change)
+8. ❌ 새 npm 패키지 무단 설치 금지
+9. ❌ 파일 전체 재작성 금지 (Edit 도구 사용)
+10. ❌ Over-engineering 금지 (추상화, 유틸리티 남발)
+11. ❌ 미리 최적화 금지 (useMemo, useCallback 남발)
+12. ❌ 문서 파일 자동 생성 금지 (명시적 요청 시에만)
+13. ❌ 에디터 페르소나 무단 수정 금지 (src/data/editors.ts)
+
+## 필수 준수 사항
+1. ✅ 수정 전 반드시 파일 먼저 읽기
+2. ✅ 요청한 것만 정확히 구현
+3. ✅ 가장 간단한 방법 선택
+4. ✅ 기존 코드 스타일/패턴 따르기
+5. ✅ TypeScript strict 모드 준수
+6. ✅ Edit 도구로 최소 변경만
+7. ✅ 불확실하면 먼저 질문하기
+8. ✅ 이모지 사용 금지 (사용자가 명시적으로 요청한 경우 제외)
+
+## 기술 스택 (절대 변경 금지)
+
+### 프론트엔드
+- React 18.3.1
+- TypeScript 5.8.3
+- Vite 5.4.19
+- React Router DOM 6.30.1
+- TanStack Query 5.83.0 (서버 상태)
+- Tailwind CSS 3.4.17
+- shadcn/ui (UI 컴포넌트)
+- React Hook Form 7.61.1 + Zod 3.25.76
+
+### 백엔드 & AI
+- Supabase (BaaS)
+- PostgreSQL (Supabase 제공)
+- Supabase Auth (인증)
+- Supabase Storage (음성 파일 저장)
+- Row Level Security (RLS)
+- OpenAI GPT-4 Turbo (콘텐츠 리라이팅)
+- OpenAI DALL-E 3 (이미지 생성)
+- OpenAI Whisper (음성→텍스트)
+
+### 푸시 알림
+- Firebase Cloud Messaging (FCM)
+
+### 콘텐츠 수집
+- RSS Parser (RSS 피드)
+
+### 배포
+- Vercel (권장)
+
+## 작업 원칙
+
+### 파일 수정 시
+1. Read 도구로 파일 먼저 읽기
+2. 기존 패턴 100% 유지
+3. Edit 도구로 최소한만 수정
+4. Write 도구로 전체 재작성 금지
+
+### 새 기능 추가 시
+1. 기획서에 명시된 것만
+2. Phase 1 범위 엄수
+3. 요청 외 개선사항 추가 금지
+4. 가장 간단한 구현 선택
+
+### AI 시스템 작업 시
+1. 에디터 페르소나 수정 전 반드시 확인
+2. OpenAI API 호출 시 에러 핸들링 필수
+3. 비용 고려 (GPT-4, DALL-E 3 비용 인지)
+4. 원본 콘텐츠의 팩트는 절대 변경 금지
+5. 프롬프트 템플릿 수정 시 사용자 확인
+
+### 에러 처리
+1. 시스템 경계에만 try-catch
+2. 내부 함수에 과도한 에러 처리 금지
+3. 발생 불가능한 에러 처리 금지
+4. any로 에러 회피 금지
+
+### 타입 안전성
+1. any 사용 최소화 (외부 라이브러리 타입 이슈 시 예외)
+2. @ts-ignore 절대 사용 금지
+3. as unknown as 최소화
+4. 정확한 타입 정의 우선 사용
+5. src/types/ai-editor.ts에 정의된 타입 활용
+
+## 코드 스타일
+
+### 컴포넌트 구조
+```typescript
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { supabase } from '@/lib/supabase';
+
+interface Props {
+  articleId: string;
+  onSuccess: () => void;
+}
+
+export function Component({ articleId, onSuccess }: Props) {
+  const [loading, setLoading] = useState(false);
+
+  const handleAction = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('table')
+        .insert({ article_id: articleId });
+
+      if (error) throw error;
+
+      onSuccess();
+    } catch (error) {
+      console.error('Error:', error);
+      alert('작업에 실패했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Button onClick={handleAction} disabled={loading}>
+      {loading ? '처리 중...' : '실행'}
+    </Button>
+  );
+}
+```
+
+### Supabase API 호출
+```typescript
+import { supabase } from '@/lib/supabase';
+import type { Challenge } from '@/types/ai-editor';
+
+export async function getChallenges(articleId: string): Promise<Challenge[]> {
+  const { data, error } = await supabase
+    .from('challenges')
+    .select(`
+      *,
+      user_profile:user_profiles(*)
+    `)
+    .eq('article_id', articleId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data;
+}
+```
+
+### OpenAI API 호출
+```typescript
+import { rewriteContent, generateImage } from '@/lib/openai';
+
+// 콘텐츠 리라이팅
+const result = await rewriteContent({
+  originalContent: rawContent,
+  editorPromptTemplate: editor.promptTemplate,
+  title: originalTitle,
+});
+
+// 이미지 생성
+const imageUrl = await generateImage({
+  title: result.title,
+  content: result.content,
+  category: editor.category,
+});
+```
+
+### 음성 녹음 훅 사용
+```typescript
+import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
+
+export function VoiceComponent() {
+  const {
+    isRecording,
+    duration,
+    audioBlob,
+    transcribedText,
+    startRecording,
+    stopRecording,
+    transcribe,
+  } = useVoiceRecorder();
+
+  // ...
+}
+```
+
+## 시니어 UX 원칙
+
+### UI/UX 가이드라인
+1. **큰 버튼**: 최소 44px 높이 (터치 영역)
+2. **큰 폰트**: 기본 16px 이상
+3. **명확한 라벨**: 아이콘만 사용 금지
+4. **단순한 플로우**: 클릭 수 최소화
+5. **명확한 피드백**: 로딩, 성공, 실패 상태 명확히
+
+### 접근성
+1. 고대비 색상 사용
+2. 키보드 네비게이션 지원
+3. 스크린 리더 지원 (aria-label)
+4. 에러 메시지 명확하게
+
+### 텍스트
+1. 한글 사용 (전문 용어 최소화)
+2. 짧고 명확한 문장
+3. 긍정적인 톤
+
+## AI 에디터 시스템 규칙
+
+### 에디터 페르소나 수정
+```typescript
+// src/data/editors.ts 수정 시
+// 1. 10명 에디터 구조 유지
+// 2. 페르소나 일관성 유지
+// 3. promptTemplate 수정 시 팩트 보존 강조
+// 4. 카테고리 변경 금지
+```
+
+### 콘텐츠 수집
+```typescript
+// src/services/contentCollector.ts
+// 1. 원본 소스 URL 반드시 저장
+// 2. 팩트 변경 절대 금지
+// 3. 중복 수집 방지
+// 4. API 레이트 리밋 고려 (딜레이 추가)
+```
+
+### 푸시 알림
+```typescript
+// src/services/pushNotificationService.ts
+// 1. 조용한 시간 존중
+// 2. 구독 설정 존중
+// 3. 과도한 알림 금지 (하루 최대 10개)
+```
+
+## 데이터베이스 규칙
+
+### 마이그레이션
+1. 새 마이그레이션 파일 생성 시 타임스탬프 사용
+2. RLS 정책 반드시 포함
+3. 인덱스 성능 고려
+4. 트리거 함수 명확하게 작성
+
+### RLS 정책
+```sql
+-- 읽기: 모두 허용
+CREATE POLICY "Public read access"
+  ON table_name FOR SELECT
+  USING (true);
+
+-- 쓰기: 인증된 사용자만
+CREATE POLICY "Authenticated users can insert"
+  ON table_name FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+```
+
+## 의심스러울 때
+
+1. README.md 확인
+2. AI_SYSTEM_SETUP.md 확인
+3. src/data/editors.ts 에디터 페르소나 확인
+4. 기존 코드 패턴 확인
+5. 사용자에게 질문
+6. 추측으로 수정 금지
+
+## 기억하세요
+
+- **적게 하는 것이 더 낫습니다**
+- **요청한 것만 하세요**
+- **추측하지 마세요**
+- **간단하게 유지하세요**
+- **이모지 사용하지 마세요**
+- **문서 자동 생성하지 마세요**
+- **AI 에디터 페르소나는 신중하게 수정하세요**
+- **시니어 사용자를 항상 고려하세요**
+- **팩트는 절대 변경하지 마세요**

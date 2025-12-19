@@ -1,0 +1,43 @@
+name: Daily Content Collection
+
+on:
+  schedule:
+    # 매일 오전 9시 (한국시간 기준, UTC는 0시)
+    - cron: '0 0 * * *'
+
+  # 수동 실행도 가능
+  workflow_dispatch:
+
+jobs:
+  collect-content:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run scheduled content collection
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run collect:scheduled
+
+      - name: Upload collection logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: collection-logs-${{ github.run_number }}
+          path: |
+            *.log
+          retention-days: 7

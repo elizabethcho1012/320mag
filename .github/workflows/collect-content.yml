@@ -1,0 +1,58 @@
+name: Collect Content
+
+on:
+  # 스케줄: 매일 오전 6시, 12시, 오후 6시 (KST 기준 - UTC는 -9시간)
+  schedule:
+    - cron: '0 21 * * *'  # 오전 6시 KST (21:00 UTC)
+    - cron: '0 3 * * *'   # 오후 12시 KST (3:00 UTC)
+    - cron: '0 9 * * *'   # 오후 6시 KST (9:00 UTC)
+
+  # 수동 실행 가능
+  workflow_dispatch:
+    inputs:
+      categories:
+        description: '수집할 카테고리 (비워두면 전체)'
+        required: false
+        default: ''
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run content collection
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run collect:scheduled
+
+      - name: Send notification on failure
+        if: failure()
+        run: |
+          echo "Content collection failed"
+          # Slack, Discord, 이메일 등으로 알림 보내기 (선택사항)
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: collection-logs-${{ github.run_number }}
+          path: |
+            logs/*.log
+            *.log
+          retention-days: 7
+          if-no-files-found: ignore

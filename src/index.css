@@ -1,0 +1,198 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@200;300;400;500;600;700;900&family=Noto+Sans+KR:wght@100;300;400;500;700;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* THIRD TWENTY Magazine Design System - Elegant Senior Lifestyle */
+
+@layer base {
+  :root {
+    /* Magazine Color Palette - Sophisticated and Accessible */
+    --background: 0 0% 98%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    /* Purple Brand Colors - Elegant and Sophisticated */
+    --primary: 262 83% 58%;
+    --primary-foreground: 210 40% 98%;
+    --primary-glow: 262 83% 68%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 262 83% 95%;
+    --accent-foreground: 262 83% 58%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 262 83% 58%;
+
+    /* Magazine-specific Design Tokens */
+    --magazine-purple: 262 83% 58%;
+    --magazine-purple-light: 262 83% 95%;
+    --magazine-gray-50: 210 40% 98%;
+    --magazine-gray-100: 214.3 31.8% 91.4%;
+    --magazine-gray-600: 215.4 16.3% 46.9%;
+    --magazine-gray-900: 222.2 84% 4.9%;
+
+    /* Elegant Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(262 83% 58% / 0.1), hsl(262 83% 68% / 0.05));
+    --gradient-premium: linear-gradient(135deg, hsl(262 83% 58%), hsl(280 80% 65%));
+    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%), hsl(210 40% 98%));
+
+    /* Magazine Typography Scale */
+    --font-serif: 'Didot', 'Bodoni MT', 'Noto Serif KR', 'Noto Serif Display', 'URW Palladio L', P052, Sylfaen, serif;
+    --font-sans: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+    /* Elegant Shadows */
+    --shadow-elegant: 0 10px 30px -10px hsl(262 83% 58% / 0.1);
+    --shadow-magazine: 0 4px 20px -4px hsl(222.2 84% 4.9% / 0.1);
+    --shadow-glow: 0 0 40px hsl(262 83% 68% / 0.2);
+
+    /* Animation & Transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-elegant: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    /* Dark Mode for Senior-Friendly Reading */
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 217.2 32.6% 17.5%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 217.2 32.6% 17.5%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 262 83% 68%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary-glow: 262 83% 78%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 262 83% 68%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 262 83% 68%;
+
+    /* Dark Mode Magazine Tokens */
+    --magazine-purple: 262 83% 68%;
+    --magazine-purple-light: 262 83% 15%;
+    --magazine-gray-50: 217.2 32.6% 17.5%;
+    --magazine-gray-100: 217.2 32.6% 20%;
+    --magazine-gray-600: 215 20.2% 65.1%;
+    --magazine-gray-900: 210 40% 98%;
+
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 262 83% 68%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 262 83% 68%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+  }
+
+  /* Magazine Typography Hierarchy */
+  .magazine-title {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    letter-spacing: 0.2em;
+  }
+
+  .magazine-heading {
+    font-family: var(--font-serif);
+    font-weight: 600;
+  }
+
+  .magazine-body {
+    font-family: var(--font-sans);
+    line-height: 1.7;
+  }
+
+  /* Elegant Animations */
+  .fade-in {
+    animation: fadeIn 0.6s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Enhanced Focus States for Accessibility */
+  .focus-visible {
+    @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+  }
+
+  /* High Contrast Mode Support */
+  .high-contrast {
+    --foreground: 0 0% 0%;
+    --background: 0 0% 100%;
+    --border: 0 0% 0%;
+    --primary: 240 100% 25%;
+  }
+
+  .high-contrast .dark {
+    --foreground: 0 0% 100%;
+    --background: 0 0% 0%;
+    --border: 0 0% 100%;
+  }
+}
