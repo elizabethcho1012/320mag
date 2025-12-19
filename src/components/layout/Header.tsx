@@ -43,10 +43,10 @@ const Header: React.FC<HeaderProps> = ({
   const mainNavigation = [
     { id: 'fashion', label: 'FASHION' },
     { id: 'beauty', label: 'BEAUTY' },
-    { id: 'culture', label: 'CULTURE' },
+    { id: 'travel', label: 'TRAVEL' },
     { id: 'lifestyle', label: 'LIFESTYLE' },
-    { id: 'creators', label: 'CREATORS' },
-    { id: 'events', label: 'EVENTS' }
+    { id: 'housing', label: 'HOUSING' },
+    { id: 'global-trends', label: 'GLOBAL TRENDS' }
   ];
 
   const handleLogin = async () => {
