@@ -6,6 +6,7 @@ import { contentSources } from '../data/content-sources';
 import { getCreatorUUID } from './editorMapping';
 import { extractImageFromRSS, extractAllImagesFromRSS, getSmartUnsplashUrl, isValidImageUrl, fetchOgImage } from './imageService';
 import { inferCategory } from './categoryInference';
+import { findWorkingFallback, convertToSourceConfig } from './rssFallbackService';
 
 const parser = new Parser({
   customFields: {
@@ -160,7 +161,7 @@ export async function collectAndRewriteCategory(
   };
 
   // 해당 카테고리의 활성화된 RSS 소스 찾기
-  const sources = contentSources.filter(
+  let sources = contentSources.filter(
     s => s.category === category && s.type === 'rss' && s.isActive
   );
 
@@ -180,6 +181,28 @@ export async function collectAndRewriteCategory(
   }
 
   console.log(`  ✅ 총 ${allArticles.length}개 아티클 수집 완료`);
+
+  // 🔄 자동 Fallback: 수집된 기사가 너무 적으면 대체 소스 시도
+  if (allArticles.length < maxArticles) {
+    console.log(`  ⚠️  수집된 기사가 부족합니다 (${allArticles.length}/${maxArticles}개)`);
+    console.log(`  🔄 자동 대체 소스 검색 중...`);
+
+    const fallbackSource = await findWorkingFallback(category);
+
+    if (fallbackSource) {
+      console.log(`  ✅ 대체 소스 발견: ${fallbackSource.name}`);
+      const fallbackConfig = convertToSourceConfig(fallbackSource);
+      const fallbackArticles = await collectFromRSS(fallbackConfig.url, category);
+
+      if (fallbackArticles.length > 0) {
+        allArticles.push(...fallbackArticles);
+        console.log(`  ✅ 대체 소스에서 ${fallbackArticles.length}개 추가 수집`);
+        console.log(`  📊 총 ${allArticles.length}개 기사 확보`);
+      }
+    } else {
+      console.log(`  ❌ 작동하는 대체 소스를 찾지 못했습니다.`);
+    }
+  }
 
   // 최신 N개만 선택
   const selectedArticles = allArticles.slice(0, maxArticles);
