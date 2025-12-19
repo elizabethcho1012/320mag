@@ -62,16 +62,23 @@ function extractKeySubject(title: string): string | null {
   return null;
 }
 
-// 카테고리 이름 → slug 매핑
+// 카테고리 이름 → slug 매핑 (NEW SEXY)
 const categorySlugMap: Record<string, string> = {
   '패션': 'fashion',
   '뷰티': 'beauty',
-  '컬처': 'culture',
   '여행': 'travel',
-  '시니어시장': 'senior-market',
-  '글로벌트렌드': 'global-trends',
-  '푸드': 'food',
+  '라이프스타일': 'lifestyle',
+  '글로벌푸드': 'global-food',
+  '건강푸드': 'health-food',
   '하우징': 'housing',
+  '글로벌트렌드': 'global-trends',
+  '시니어시장': 'senior-market',
+  '심리': 'psychology',
+  '섹슈얼리티': 'sexuality',
+  '운동': 'exercise',
+  // 레거시 호환
+  '컬처': 'culture',
+  '푸드': 'food',
 };
 
 /**
