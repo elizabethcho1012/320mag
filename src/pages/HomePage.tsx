@@ -2,9 +2,6 @@ import React, { useState, useEffect } from 'react';
 import Footer from '../components/layout/Footer';
 import { usePublishedArticles, useFeaturedArticles, useCreators } from '../hooks/useArticles';
 
-// 폴백용 로컬 데이터
-import { creators as localCreators } from '../data/creators';
-
 interface HomePageProps {
   onArticleClick: (id: number | string) => void;
   isDarkMode: boolean;
@@ -131,8 +128,8 @@ const HomePage: React.FC<HomePageProps> = ({ onArticleClick, isDarkMode, highCon
       });
   };
 
-  // 크리에이터 데이터 (DB 또는 로컬)
-  const creators = dbCreators.length > 0 ? dbCreators : localCreators;
+  // 크리에이터 데이터 (DB에서만 가져오기, 로컬 폴백 제거)
+  const creators = dbCreators;
 
   const contentSections = [
     {
@@ -192,8 +189,10 @@ const HomePage: React.FC<HomePageProps> = ({ onArticleClick, isDarkMode, highCon
           )
         ))}
         
-        {/* 크리에이터 섹션 */}
-        <CreatorsSectionLocal creators={creators} isDarkMode={isDarkMode} />
+        {/* 크리에이터 섹션 - DB에 등록된 크리에이터가 있을 때만 표시 */}
+        {creators.length > 0 && (
+          <CreatorsSectionLocal creators={creators} isDarkMode={isDarkMode} />
+        )}
       </div>
       
       <Footer isDarkMode={isDarkMode} />
