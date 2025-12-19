@@ -30,8 +30,57 @@ export const contentSources: ContentSourceConfig[] = [
 
   // ============================================
   // 뷰티 - 40~50대 피부와 안티에이징
-  // ⚠️ 현재 작동하는 RSS 없음 - 추후 웹 스크래핑 구현 필요
   // ============================================
+  {
+    id: 'beauty-allure',
+    name: 'Allure',
+    url: 'https://www.allure.com/feed/rss',
+    type: 'rss',
+    category: '뷰티',
+    description: '안티에이징과 뷰티 트렌드',
+    fetchFrequency: 'daily',
+    isActive: true,
+  },
+  {
+    id: 'beauty-marie-claire',
+    name: 'Marie Claire Beauty',
+    url: 'https://www.marieclaire.com/beauty/feed/',
+    type: 'rss',
+    category: '뷰티',
+    description: '성숙한 여성을 위한 뷰티',
+    fetchFrequency: 'daily',
+    isActive: true,
+  },
+  {
+    id: 'beauty-zoe-report',
+    name: 'The Zoe Report',
+    url: 'https://www.thezoereport.com/rss',
+    type: 'rss',
+    category: '뷰티',
+    description: '트렌디한 뷰티 & 라이프스타일',
+    fetchFrequency: 'daily',
+    isActive: true,
+  },
+  {
+    id: 'beauty-temptalia',
+    name: 'Temptalia',
+    url: 'https://www.temptalia.com/feed/',
+    type: 'rss',
+    category: '뷰티',
+    description: '뷰티 제품 리뷰 전문',
+    fetchFrequency: 'daily',
+    isActive: true,
+  },
+  {
+    id: 'beauty-organic-spa',
+    name: 'Organic Spa',
+    url: 'https://www.organicspamagazine.com/feed/',
+    type: 'rss',
+    category: '뷰티',
+    description: '자연주의 뷰티 & 웰니스',
+    fetchFrequency: 'daily',
+    isActive: true,
+  },
 
   // ============================================
   // 여행 - 40~50대를 위한 프리미엄 여행
