@@ -238,25 +238,59 @@ const HeroSlideLocal: React.FC<{
   isDarkMode: boolean;
 }> = ({ featuredArticles, onArticleClick }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
-  
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
+
   useEffect(() => {
     if (featuredArticles.length <= 1) return;
-    
+
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % featuredArticles.length);
     }, 5000);
-    
+
     return () => clearInterval(interval);
   }, [featuredArticles.length]);
+
+  // 터치 스와이프 핸들러
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe && currentSlide < featuredArticles.length - 1) {
+      setCurrentSlide(currentSlide + 1);
+    }
+
+    if (isRightSwipe && currentSlide > 0) {
+      setCurrentSlide(currentSlide - 1);
+    }
+
+    // 리셋
+    setTouchStart(0);
+    setTouchEnd(0);
+  };
 
   if (featuredArticles.length === 0) return null;
 
   return (
     <section className="mb-16">
       <div className="relative rounded-2xl overflow-hidden shadow-xl">
-        <div 
+        <div
           className="flex transition-transform duration-500 ease-in-out"
           style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
           {featuredArticles.map((article) => (
             <div
