@@ -503,18 +503,15 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({ articleId, onBack
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {relatedArticles.map((relatedArticle) => (
-                <div 
+                <div
                   key={relatedArticle.id}
                   className="cursor-pointer group"
-                  onClick={() => {
-                    // 관련 기사 클릭 시 새로운 기사로 이동
-                    window.location.href = `#article-${relatedArticle.id}`;
-                  }}
+                  onClick={() => onArticleClick(relatedArticle.id)}
                 >
                   <img
                     src={relatedArticle.featured_image_url || 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=400&h=300&fit=crop'}
                     alt={relatedArticle.title}
-                    className="w-full h-32 object-cover mb-3 group-hover:opacity-90 transition-opacity rounded-lg"
+                    className="w-full h-32 object-contain mb-3 group-hover:opacity-90 transition-opacity rounded-lg bg-gray-100"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.src = 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=400&h=300&fit=crop';
