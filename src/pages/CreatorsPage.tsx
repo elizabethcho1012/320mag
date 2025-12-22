@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCreators } from '../hooks/useArticles';
 import { supabaseAny as supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 import CreatorRegistrationForm from '../components/creator/CreatorRegistrationForm';
+import EditorApplicationForm from '../components/creator/EditorApplicationForm';
 
 interface CreatorsPageProps {
   isDarkMode: boolean;
@@ -340,8 +342,10 @@ const CreatorDetailModal: React.FC<{
 const CreatorsPage: React.FC<CreatorsPageProps> = ({ isDarkMode }) => {
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
   const [isRegistrationFormOpen, setIsRegistrationFormOpen] = useState(false);
+  const [isEditorApplicationOpen, setIsEditorApplicationOpen] = useState(false);
 
   const queryClient = useQueryClient();
+  const { profile } = useAuth();
   const { data: creators = [], isLoading, error } = useCreators();
   const { data: articleCounts = {} } = useCreatorArticleCounts();
 
@@ -446,7 +450,7 @@ const CreatorsPage: React.FC<CreatorsPageProps> = ({ isDarkMode }) => {
 
         {/* 통계 */}
         {creators.length > 0 && (
-          <div className={`text-center p-8 rounded-2xl ${isDarkMode ? 'bg-gray-800' : 'bg-purple-50'}`}>
+          <div className={`text-center p-8 rounded-2xl ${isDarkMode ? 'bg-gray-800' : 'bg-purple-50'} mb-16`}>
             <h2 className={`text-2xl font-bold mb-6 ${textClass}`}>Third Twenty Creators</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div>
@@ -476,6 +480,74 @@ const CreatorsPage: React.FC<CreatorsPageProps> = ({ isDarkMode }) => {
             </div>
           </div>
         )}
+
+        {/* 에디터 지원 섹션 */}
+        <div className={`rounded-2xl overflow-hidden ${isDarkMode ? 'bg-gradient-to-br from-purple-900/40 to-pink-900/40 border border-purple-800/50' : 'bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200'}`}>
+          <div className="p-8 md:p-12">
+            <div className="max-w-3xl mx-auto text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 mb-6">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </div>
+
+              <h2 className={`text-3xl font-bold mb-4 ${textClass}`}>에디터 지원합니다!</h2>
+
+              <p className={`text-lg ${subtextClass} mb-6`}>
+                Third Twenty의 에디터가 되어 당신의 이야기를 공유하세요.
+                <br />
+                승인된 에디터는 마이페이지에서 직접 글을 작성하고 발행할 수 있습니다.
+              </p>
+
+              <div className={`text-left space-y-3 mb-8 max-w-2xl mx-auto ${isDarkMode ? 'bg-gray-800/50' : 'bg-white/50'} rounded-xl p-6`}>
+                <h3 className={`font-semibold ${textClass} mb-3 flex items-center gap-2`}>
+                  <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  에디터 혜택
+                </h3>
+                <ul className={`space-y-2 ${subtextClass}`}>
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-600 font-bold">•</span>
+                    <span>마이페이지에서 자유롭게 글 작성 및 발행</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-600 font-bold">•</span>
+                    <span>AI 검토를 통한 자동 카테고리 분류 및 품질 관리</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-600 font-bold">•</span>
+                    <span>Third Twenty 커뮤니티와 함께 성장하는 기회</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-purple-600 font-bold">•</span>
+                    <span>독자들과 소통하며 영향력 확대</span>
+                  </li>
+                </ul>
+              </div>
+
+              <button
+                onClick={() => {
+                  if (!profile) {
+                    alert('에디터 지원을 하려면 먼저 로그인이 필요합니다.');
+                    return;
+                  }
+                  setIsEditorApplicationOpen(true);
+                }}
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-full font-semibold hover:from-purple-700 hover:to-pink-700 transition-all transform hover:scale-105 shadow-xl text-lg"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+                에디터 지원하기
+              </button>
+
+              <p className={`text-sm ${subtextClass} mt-4`}>
+                {profile ? '지금 바로 지원서를 작성하세요!' : '로그인 후 지원 가능합니다'}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* 상세 모달 */}
@@ -494,6 +566,17 @@ const CreatorsPage: React.FC<CreatorsPageProps> = ({ isDarkMode }) => {
           isDarkMode={isDarkMode}
           onClose={() => setIsRegistrationFormOpen(false)}
           onSuccess={handleRegistrationSuccess}
+        />
+      )}
+
+      {/* 에디터 신청 폼 모달 */}
+      {isEditorApplicationOpen && (
+        <EditorApplicationForm
+          isDarkMode={isDarkMode}
+          onClose={() => setIsEditorApplicationOpen(false)}
+          onSuccess={() => {
+            alert('에디터 지원이 완료되었습니다! 검토 후 이메일로 결과를 안내드립니다.');
+          }}
         />
       )}
     </div>

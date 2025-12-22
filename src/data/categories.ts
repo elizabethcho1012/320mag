@@ -21,10 +21,10 @@ export interface CategoryDefinition {
 }
 
 /**
- * NEW SEXY 카테고리 (40-50대 중장년을 위한 9개 카테고리)
+ * NEW SEXY 카테고리 (40-50대 AGene을 위한 8개 카테고리)
  *
- * ⚠️  이 배열을 절대 수정하지 마세요!
- * 카테고리 개수는 절대값입니다.
+ * ⚠️  2025-12-22 업데이트: 라이프스타일 제거 (기준 애매함)
+ * 카테고리 개수: 8개
  */
 export const CATEGORIES: CategoryDefinition[] = [
   {
@@ -70,24 +70,17 @@ export const CATEGORIES: CategoryDefinition[] = [
     keywords: ['fitness', 'exercise', 'workout', '운동', '피트니스', 'yoga', 'strength', 'cardio', 'training', 'gym', 'health', '건강', 'wellness'],
   },
   {
-    name: '라이프스타일',
-    slug: 'lifestyle',
-    description: '일상, 문화, 예술, 엔터테인먼트',
-    order_index: 7,
-    keywords: ['art', 'culture', 'exhibition', 'museum', 'theater', '예술', '문화', '전시', '공연', 'lifestyle', 'entertainment', 'hobby'],
-  },
-  {
     name: '하우징',
     slug: 'housing',
     description: '인테리어와 주거 공간',
-    order_index: 8,
+    order_index: 7,
     keywords: ['architecture', 'interior', 'house', 'home design', 'home interior', '건축', '인테리어', 'remodeling', 'renovation'],
   },
   {
     name: '섹슈얼리티',
     slug: 'sexuality',
     description: '친밀감, 관계, 성 건강',
-    order_index: 9,
+    order_index: 8,
     keywords: ['sexuality', 'intimacy', 'relationship', '섹슈얼리티', '친밀감', '관계', 'sex', 'sexual health', 'dating', 'romance'],
   },
 ];
@@ -101,7 +94,7 @@ export const CATEGORY_NAMES = CATEGORIES.map(c => c.name);
  * 카테고리 키워드 매핑 (카테고리 추론용)
  *
  * ⚠️  중요: 순서가 중요! 더 구체적인 카테고리를 먼저 체크해야 함
- * 섹슈얼리티를 심리보다 먼저, 건강을 푸드보다 먼저 체크
+ * 섹슈얼리티를 심리보다 먼저, 운동을 푸드보다 먼저 체크
  */
 export const CATEGORY_KEYWORDS: Record<string, string[]> = {
   패션: CATEGORIES.find(c => c.name === '패션')!.keywords,
@@ -110,12 +103,11 @@ export const CATEGORY_KEYWORDS: Record<string, string[]> = {
   하우징: CATEGORIES.find(c => c.name === '하우징')!.keywords,
   // 🔥 섹슈얼리티를 먼저 체크 (심리보다 구체적)
   섹슈얼리티: CATEGORIES.find(c => c.name === '섹슈얼리티')!.keywords,
-  // 🔥 건강을 먼저 체크 (푸드보다 구체적)
-  건강: CATEGORIES.find(c => c.name === '건강')!.keywords,
+  // 🔥 운동을 먼저 체크 (푸드보다 구체적)
+  운동: CATEGORIES.find(c => c.name === '운동')!.keywords,
   // 이제 더 넓은 카테고리들
   심리: CATEGORIES.find(c => c.name === '심리')!.keywords,
   푸드: CATEGORIES.find(c => c.name === '푸드')!.keywords,
-  라이프스타일: CATEGORIES.find(c => c.name === '라이프스타일')!.keywords,
 };
 
 /**
@@ -127,8 +119,7 @@ export const subcategoryMap = {
   "여행": ["ALL", "DESTINATION", "CULTURE", "FOOD TRAVEL", "SLOW TRAVEL", "TIPS"],
   "푸드": ["ALL", "WORLD CUISINE", "RESTAURANT", "FOOD CULTURE", "WINE & SPIRITS", "NUTRITION", "RECIPES"],
   "심리": ["ALL", "WELLNESS", "MINDFULNESS", "RELATIONSHIPS", "SELF-DEVELOPMENT"],
-  "건강": ["ALL", "STRENGTH", "CARDIO", "FLEXIBILITY", "INJURY PREVENTION", "EXERCISE SCIENCE"],
-  "라이프스타일": ["ALL", "WELLNESS", "CAREER", "RELATIONSHIPS", "CULTURE", "ENTERTAINMENT"],
+  "운동": ["ALL", "STRENGTH", "CARDIO", "FLEXIBILITY", "INJURY PREVENTION", "EXERCISE SCIENCE"],
   "하우징": ["ALL", "INTERIOR", "REMODELING", "SMART HOME", "UNIVERSAL DESIGN", "SENIOR LIVING"],
   "섹슈얼리티": ["ALL", "INTIMACY", "RELATIONSHIPS", "HEALTH", "COUNSELING"]
 };

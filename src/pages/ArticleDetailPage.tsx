@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useArticleById, useRelatedArticles, usePrevNextArticles } from '../hooks/useArticles';
+import { useArticleLikes, useArticleView, useArticleStats } from '../hooks/useArticleLikes';
+import { useAuth } from '../contexts/AuthContext';
 import { ChallengeForm } from '../components/challenge/ChallengeForm';
 import { ChallengeCard } from '../components/challenge/ChallengeCard';
 import { supabaseAny as supabase } from '../lib/supabase';
@@ -39,6 +41,7 @@ const useChallenges = (articleId: string) => {
 const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({ articleId, onBack, onArticleClick, isDarkMode }) => {
   const [showChallengeForm, setShowChallengeForm] = useState(false);
   const [likedChallenges, setLikedChallenges] = useState<Set<string>>(new Set());
+  const { profile } = useAuth();
 
   // ID로 기사 조회 (slug 대신)
   const { data: article, isLoading, error } = useArticleById(articleId);
@@ -47,6 +50,20 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({ articleId, onBack
     article?.category_id || ''
   );
   const { data: challenges = [], refetch: refetchChallenges } = useChallenges(articleId);
+
+  // 좋아요 및 조회수 기능
+  const { likeCount, hasLiked, toggleLike, isToggling } = useArticleLikes(articleId);
+  const { data: stats } = useArticleStats(articleId);
+  useArticleView(articleId); // 조회수 자동 기록
+
+  // 좋아요 버튼 클릭 핸들러
+  const handleLikeClick = () => {
+    if (!profile) {
+      alert('좋아요를 누르려면 로그인이 필요합니다.');
+      return;
+    }
+    toggleLike();
+  };
 
   // 이전글/다음글 조회
   const { data: prevNextData } = usePrevNextArticles(
@@ -164,8 +181,8 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({ articleId, onBack
           <p className={`text-xl mb-6 leading-relaxed ${subtextClass}`}>
             {article.excerpt}
           </p>
-          
-          <div className={`flex items-center space-x-4 pb-6 border-b ${
+
+          <div className={`flex items-center justify-between pb-6 border-b ${
             isDarkMode ? 'border-gray-700' : 'border-gray-200'
           }`}>
             <div className="flex items-center space-x-3">
@@ -177,6 +194,34 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({ articleId, onBack
                   Editor
                 </p>
               </div>
+            </div>
+
+            {/* 좋아요 버튼 및 통계 */}
+            <div className="flex items-center gap-4">
+              <div className={`flex items-center gap-2 text-sm ${subtextClass}`}>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                <span>{stats?.view_count || article.view_count || 0}</span>
+              </div>
+
+              <button
+                onClick={handleLikeClick}
+                disabled={isToggling}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium transition-all ${
+                  hasLiked
+                    ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                    : isDarkMode
+                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                <svg className={`w-5 h-5 ${hasLiked ? 'fill-current' : ''}`} fill={hasLiked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                <span>{likeCount || article.like_count || 0}</span>
+              </button>
             </div>
           </div>
         </header>

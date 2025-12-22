@@ -64,12 +64,11 @@ function extractKeySubject(title: string): string | null {
   return null;
 }
 
-// 카테고리 이름 → slug 매핑 (NEW SEXY - 9개 카테고리)
+// 카테고리 이름 → slug 매핑 (NEW SEXY - 8개 카테고리, 라이프스타일 제거됨)
 const categorySlugMap: Record<string, string> = {
   '패션': 'fashion',
   '뷰티': 'beauty',
   '여행': 'travel',
-  '라이프스타일': 'lifestyle',
   '푸드': 'food',
   '하우징': 'housing',
   '심리': 'mind',
@@ -139,22 +138,23 @@ async function getSubcategoryId(categoryId: string, subcategoryName: string): Pr
 }
 
 /**
- * 에디터 ID로 editor_id 조회 (editors 테이블에서)
+ * 에디터 ID로 editor_id 조회 (creators 테이블에서)
+ * 참고: 현재는 editorMapping.ts의 getCreatorUUID를 사용하므로 이 함수는 사용되지 않음
  */
-async function getEditorId(editorId: string): Promise<string | null> {
-  const { data, error } = await supabase
-    .from('editors')
-    .select('id')
-    .eq('id', editorId)
-    .single();
-
-  if (error) {
-    console.error(`Editor 조회 실패 (${editorId}):`, error);
-    return null;
-  }
-
-  return data?.id || null;
-}
+// async function getEditorId(editorId: string): Promise<string | null> {
+//   const { data, error } = await supabase
+//     .from('creators')
+//     .select('id')
+//     .eq('id', editorId)
+//     .single();
+//
+//   if (error) {
+//     console.error(`Editor 조회 실패 (${editorId}):`, error);
+//     return null;
+//   }
+//
+//   return data?.id || null;
+// }
 
 /**
  * RSS 피드에서 콘텐츠 수집 (이미지 포함)
@@ -486,10 +486,10 @@ export async function collectAndRewriteCategory(
 }
 
 /**
- * 모든 카테고리에서 콘텐츠 수집 (NEW SEXY - 9개 카테고리)
+ * 모든 카테고리에서 콘텐츠 수집 (NEW SEXY - 8개 카테고리)
  */
 export async function collectAllCategories(
-  articlesPerCategory: number = 3,
+  articlesPerCategory: number = 1,
   openaiApiKey?: string,
   anthropicApiKey?: string
 ): Promise<Record<string, CollectionResult>> {
@@ -497,7 +497,6 @@ export async function collectAllCategories(
     '패션',
     '뷰티',
     '여행',
-    '라이프스타일',
     '푸드',
     '하우징',
     '심리',
@@ -578,44 +577,27 @@ export async function scheduledCollection(openaiApiKey?: string, anthropicApiKey
 }
 
 /**
- * 요일별 카테고리 순환 스케줄
+ * 매일 전체 카테고리 수집 스케줄 (8개 카테고리)
+ * 매일 모든 카테고리에서 1개씩 기사 생성 = 총 8개/일
+ * 8명의 에디터가 매일 1개씩 글 작성
+ * - 패션(Sophia), 뷰티(Jane), 여행(Clara), 푸드(Antoine)
+ * - 하우징(Thomas), 심리(Rebecca), 섹슈얼리티(Sarah), 운동(Mia)
  */
+const DAILY_ALL_CATEGORIES = ['패션', '뷰티', '여행', '푸드', '하우징', '심리', '섹슈얼리티', '운동'];
+const DAILY_ALL_COUNTS = [1, 1, 1, 1, 1, 1, 1, 1]; // 각 카테고리당 1개씩
+
 /**
- * 3일 주기 에디터 로테이션 스케줄 (9개 카테고리)
- * 9명의 에디터가 3일마다 한 번씩 글 작성
- * - Day 1: Sophia(패션), Jane(뷰티), Clara(여행)
- * - Day 2: Marcus(라이프스타일), Antoine(푸드), Thomas(하우징)
- * - Day 3: Sarah(섹슈얼리티), Rebecca(심리), Mia(건강)
+ * 레거시 호환성을 위한 WEEKLY_SCHEDULE
+ * 이제 모든 요일에 동일하게 8개 카테고리 모두 수집
  */
 const WEEKLY_SCHEDULE: Record<number, { categories: string[]; counts: number[] }> = {
-  0: { // 일요일 - Day 1
-    categories: ['패션', '뷰티', '여행'],
-    counts: [1, 1, 1]
-  },
-  1: { // 월요일 - Day 2
-    categories: ['라이프스타일', '푸드', '하우징'],
-    counts: [1, 1, 1]
-  },
-  2: { // 화요일 - Day 3
-    categories: ['섹슈얼리티', '심리', '운동'],
-    counts: [1, 1, 1]
-  },
-  3: { // 수요일 - Day 1
-    categories: ['패션', '뷰티', '여행'],
-    counts: [1, 1, 1]
-  },
-  4: { // 목요일 - Day 2
-    categories: ['라이프스타일', '푸드', '하우징'],
-    counts: [1, 1, 1]
-  },
-  5: { // 금요일 - Day 3
-    categories: ['섹슈얼리티', '심리', '운동'],
-    counts: [1, 1, 1]
-  },
-  6: { // 토요일 - Day 1
-    categories: ['패션', '뷰티', '여행'],
-    counts: [1, 1, 1]
-  }
+  0: { categories: DAILY_ALL_CATEGORIES, counts: DAILY_ALL_COUNTS }, // 일요일
+  1: { categories: DAILY_ALL_CATEGORIES, counts: DAILY_ALL_COUNTS }, // 월요일
+  2: { categories: DAILY_ALL_CATEGORIES, counts: DAILY_ALL_COUNTS }, // 화요일
+  3: { categories: DAILY_ALL_CATEGORIES, counts: DAILY_ALL_COUNTS }, // 수요일
+  4: { categories: DAILY_ALL_CATEGORIES, counts: DAILY_ALL_COUNTS }, // 목요일
+  5: { categories: DAILY_ALL_CATEGORIES, counts: DAILY_ALL_COUNTS }, // 금요일
+  6: { categories: DAILY_ALL_CATEGORIES, counts: DAILY_ALL_COUNTS }  // 토요일
 };
 
 function getDayName(day: number): string {
@@ -624,8 +606,8 @@ function getDayName(day: number): string {
 }
 
 /**
- * 매일 3개씩 요일별 카테고리 순환 수집
- * 가장 경제적이고 효율적인 방식
+ * 매일 8개씩 전체 카테고리 수집
+ * 매일 모든 카테고리에서 1개씩 기사 생성 = 총 8개/일
  */
 export async function dailyRotationCollection(
   openaiApiKey?: string,

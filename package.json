@@ -11,9 +11,8 @@
     "preview": "vite preview",
     "collect:test": "tsx scripts/test-rss-collection.ts",
     "collect:all": "tsx scripts/test-rss-collection.ts all",
-    "collect:scheduled": "tsx scripts/scheduled-collection.ts",
     "collect:daily": "tsx scripts/daily-rotation.ts",
-    "collect:fashion": "tsx scripts/collect-fashion.ts",
+    "rss:health": "tsx scripts/auto-rss-recovery.ts",
     "test:pipeline": "tsx scripts/test-pipeline.ts",
     "check:articles": "tsx scripts/check-articles.ts",
     "update:names": "tsx scripts/update-creator-names.ts"

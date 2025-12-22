@@ -46,10 +46,10 @@ const Header: React.FC<HeaderProps> = ({
     { id: 'food', label: 'FOOD' },
     { id: 'fitness', label: 'FITNESS' },
     { id: 'travel', label: 'TRAVEL' },
-    { id: 'lifestyle', label: 'LIFESTYLE' },
     { id: 'housing', label: 'HOUSING' },
     { id: 'mind', label: 'MIND' },
-    { id: 'sexuality', label: 'SEXUALITY' }
+    { id: 'sexuality', label: 'SEXUALITY' },
+    { id: 'creators', label: 'CREATORS' }
   ];
 
   const handleLogin = async () => {
@@ -270,7 +270,7 @@ const Header: React.FC<HeaderProps> = ({
                     {profile && (
                       <button
                         onClick={() => {
-                          alert('마이페이지 기능 준비 중입니다.');
+                          setCurrentPage('mypage');
                           setShowMenu(false);
                         }}
                         className={`w-full text-left px-4 py-3 rounded-lg transition-colors flex items-center space-x-3 ${

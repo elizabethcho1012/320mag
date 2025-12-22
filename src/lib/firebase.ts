@@ -16,8 +16,8 @@ const firebaseConfig = {
 let app;
 let messaging: Messaging | null = null;
 
-// Firebase 초기화 (브라우저 환경에서만)
-if (typeof window !== 'undefined') {
+// Firebase 초기화 (브라우저 환경에서만, 그리고 설정이 있을 때만)
+if (typeof window !== 'undefined' && firebaseConfig.projectId) {
   try {
     app = initializeApp(firebaseConfig);
     messaging = getMessaging(app);

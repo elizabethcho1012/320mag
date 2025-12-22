@@ -92,7 +92,7 @@ export const saveFCMToken = async (userId: string, token: string) => {
   }
 };
 
-// Initialize Firebase on module load
-if (typeof window !== 'undefined') {
+// Initialize Firebase on module load only if config is available
+if (typeof window !== 'undefined' && firebaseConfig.projectId) {
   initializeFirebase();
 }

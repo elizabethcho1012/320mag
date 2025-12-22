@@ -48,7 +48,7 @@ async function fillMissingCategories() {
       .eq('status', 'published');
 
     const count = articles?.length || 0;
-    const needed = Math.max(0, 4 - count);
+    const needed = Math.max(0, 13 - count);
 
     categoryStatus[category.name] = {
       current: count,
@@ -56,8 +56,8 @@ async function fillMissingCategories() {
       slug: category.slug
     };
 
-    const emoji = count === 0 ? '❌' : count < 4 ? '⚠️' : '✅';
-    console.log(`  ${emoji} ${category.name} (${category.slug}): ${count}/4 ${needed > 0 ? `(${needed}개 필요)` : count > 4 ? `(${count - 4}개 초과, 유지)` : '(완료)'}`);
+    const emoji = count === 0 ? '❌' : count < 13 ? '⚠️' : '✅';
+    console.log(`  ${emoji} ${category.name} (${category.slug}): ${count}/13 ${needed > 0 ? `(${needed}개 필요)` : count > 13 ? `(${count - 13}개 초과, 유지)` : '(완료)'}`);
   }
 
   // 2단계: 부족한 카테고리 채우기
@@ -110,9 +110,9 @@ async function fillMissingCategories() {
       .eq('status', 'published');
 
     const count = articles?.length || 0;
-    const emoji = count === 0 ? '❌' : count < 4 ? '⚠️' : '✅';
+    const emoji = count === 0 ? '❌' : count < 13 ? '⚠️' : '✅';
 
-    console.log(`  ${emoji} ${category.name}: ${count}/4 ${count > 4 ? `(${count - 4}개 초과)` : ''}`);
+    console.log(`  ${emoji} ${category.name}: ${count}/13 ${count > 13 ? `(${count - 13}개 초과)` : ''}`);
   }
 
   console.log('\n\n📈 수집 통계:');

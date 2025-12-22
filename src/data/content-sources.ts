@@ -89,7 +89,7 @@ export const contentSources: ContentSourceConfig[] = [
     category: '뷰티',
     description: '뷰티 인사이더 인터뷰',
     fetchFrequency: 'daily',
-    isActive: true,
+    isActive: false, // 2025-12-22: 404 에러로 비활성화
   },
   {
     id: 'beauty-beautylish',
@@ -99,7 +99,27 @@ export const contentSources: ContentSourceConfig[] = [
     category: '뷰티',
     description: '프로페셔널 뷰티 팁',
     fetchFrequency: 'daily',
-    isActive: true,
+    isActive: false, // 2025-12-22: 405 에러로 비활성화
+  },
+  {
+    id: 'beauty-byrdie',
+    name: 'Byrdie',
+    url: 'https://www.byrdie.com/feed',
+    type: 'rss',
+    category: '뷰티',
+    description: '뷰티 트렌드와 제품 리뷰',
+    fetchFrequency: 'daily',
+    isActive: false, // 2025-12-22: 404 에러로 자동 비활성화,
+  },
+  {
+    id: 'beauty-refinery29',
+    name: 'Refinery29 Beauty',
+    url: 'https://www.refinery29.com/en-us/beauty/rss',
+    type: 'rss',
+    category: '뷰티',
+    description: '트렌디한 뷰티 뉴스',
+    fetchFrequency: 'daily',
+    isActive: false, // 2025-12-22: 404 에러로 자동 비활성화,
   },
 
   // ============================================
@@ -113,7 +133,7 @@ export const contentSources: ContentSourceConfig[] = [
     category: '여행',
     description: '실속있는 여행 정보',
     fetchFrequency: 'daily',
-    isActive: true,
+    isActive: false, // 2025-12-22: 403 에러로 자동 비활성화,
   },
   {
     id: 'travel-atlas-obscura',
@@ -153,7 +173,7 @@ export const contentSources: ContentSourceConfig[] = [
     category: '여행',
     description: '세계 여행 가이드 전문',
     fetchFrequency: 'daily',
-    isActive: true,
+    isActive: false, // 2025-12-22: ERROR 에러로 자동 비활성화,
   },
 
   // ============================================
@@ -221,7 +241,7 @@ export const contentSources: ContentSourceConfig[] = [
     category: '글로벌푸드',
     description: '과학적 요리법과 레시피',
     fetchFrequency: 'daily',
-    isActive: true,
+    isActive: false, // 2025-12-22: 404 에러로 자동 비활성화,
   },
   {
     id: 'global-food-saveur',
@@ -231,7 +251,7 @@ export const contentSources: ContentSourceConfig[] = [
     category: '글로벌푸드',
     description: '세계 음식 문화 탐험',
     fetchFrequency: 'daily',
-    isActive: true,
+    isActive: false, // 2025-12-22: ERROR 에러로 자동 비활성화,
   },
 
   // ============================================
@@ -397,7 +417,7 @@ export const contentSources: ContentSourceConfig[] = [
     category: '섹슈얼리티',
     description: '심리학 기반 성과 관계',
     fetchFrequency: 'daily',
-    isActive: true,
+    isActive: false, // 2025-12-22: 404 에러로 자동 비활성화,
   },
   {
     id: 'sexuality-gottman',
@@ -462,7 +482,7 @@ export const contentSources: ContentSourceConfig[] = [
     category: '운동',
     description: '근력 및 기능성 운동',
     fetchFrequency: 'daily',
-    isActive: true,
+    isActive: false, // 2025-12-22: 403 에러로 비활성화
   },
   {
     id: 'exercise-ace-fitness',
@@ -471,6 +491,26 @@ export const contentSources: ContentSourceConfig[] = [
     type: 'rss',
     category: '운동',
     description: '전문가 피트니스 조언',
+    fetchFrequency: 'daily',
+    isActive: false, // 2025-12-22: 404 에러로 비활성화
+  },
+  {
+    id: 'exercise-shape',
+    name: 'Shape Magazine',
+    url: 'https://www.shape.com/rss',
+    type: 'rss',
+    category: '운동',
+    description: '피트니스와 건강 라이프스타일',
+    fetchFrequency: 'daily',
+    isActive: false, // 2025-12-22: 404 에러로 자동 비활성화,
+  },
+  {
+    id: 'exercise-womens-health',
+    name: "Women's Health",
+    url: 'https://www.womenshealthmag.com/rss/all.xml/',
+    type: 'rss',
+    category: '운동',
+    description: '여성 건강과 피트니스',
     fetchFrequency: 'daily',
     isActive: true,
   },

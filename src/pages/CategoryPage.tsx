@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useArticlesByCategory, useCategories } from '../hooks/useArticles';
+import { useAdvertisementsByCategory } from '../hooks/useAdvertisements';
+import AdBanner from '../components/AdBanner';
 interface CategoryPageProps {
   category: string;
   onArticleClick: (id: number | string) => void;
@@ -11,14 +13,12 @@ const SubcategoryTabs: React.FC<{
   onSubcategoryChange: (subcategory: string) => void;
   isDarkMode: boolean;
   highContrast: boolean;
-  isMindCategory?: boolean;
 }> = ({
   categorySlug,
   selectedSubcategory,
   onSubcategoryChange,
   isDarkMode,
-  highContrast,
-  isMindCategory = false
+  highContrast
 }) => {
   const {
     data: categories = []
@@ -30,18 +30,10 @@ const SubcategoryTabs: React.FC<{
 
   // 이미 ALL이 있는지 확인하고 없으면 추가
   const hasAll = subcategories.some(sub => sub.name === 'ALL' || sub.slug === 'all');
-  let allSubcategories = hasAll ? subcategories : [{
+  const allSubcategories = hasAll ? subcategories : [{
     name: 'ALL',
     slug: 'all'
   }, ...subcategories];
-
-  // MIND 카테고리인 경우 "SEXUALITY (Special)" 탭 추가
-  if (isMindCategory) {
-    allSubcategories = [...allSubcategories, {
-      name: 'SEXUALITY (Special)',
-      slug: 'sexuality-special'
-    }];
-  }
 
   return <div className="mb-8">
       <div className={`border-b ${isDarkMode ? 'border-gray-700' : highContrast ? 'border-black' : 'border-gray-200'}`}>
@@ -72,13 +64,11 @@ const getCategorySlug = (categoryName: string): string => {
     '패션': 'fashion',
     '뷰티': 'beauty',
     '여행': 'travel',
-    '컬처': 'culture',
-    '라이프스타일': 'lifestyle',
     '푸드': 'food',
-    '심리': 'psychology',
-    '운동': 'exercise',
+    '심리': 'mind',        // Fixed: was 'psychology'
+    '운동': 'fitness',     // Fixed: was 'exercise'
     '하우징': 'housing',
-    '글로벌트렌드': 'global-trends'
+    '섹슈얼리티': 'sexuality'
   };
   return categoryMap[categoryName] || categoryName.toLowerCase();
 };
@@ -91,13 +81,11 @@ const getCategoryDisplayName = (categoryName: string): string => {
     '패션': 'FASHION',
     '뷰티': 'BEAUTY',
     '여행': 'TRAVEL',
-    '컬처': 'CULTURE',
-    '라이프스타일': 'LIFESTYLE',
     '푸드': 'FOOD',
     '심리': 'MIND',
     '운동': 'FITNESS',
     '하우징': 'HOUSING',
-    '글로벌트렌드': 'GLOBAL TRENDS',
+    '섹슈얼리티': 'SEXUALITY',
     'creators': 'CREATORS'
   };
   return displayMap[categoryName] || categoryName.toUpperCase();
@@ -113,27 +101,15 @@ const CategoryPage: React.FC<CategoryPageProps> = ({
 
   // Supabase에서 카테고리별 기사 가져오기
   const categorySlug = getCategorySlug(category);
-  const isMindCategory = category === '심리';
+  const { data: allCategoryArticles = [], isLoading, error } = useArticlesByCategory(categorySlug);
 
-  // MIND 카테고리는 psychology와 sexuality 두 카테고리의 기사를 모두 가져옴
-  const psychologyQuery = useArticlesByCategory('psychology');
-  const sexualityQuery = useArticlesByCategory('sexuality');
-  const regularQuery = useArticlesByCategory(categorySlug);
+  // 카테고리 정보 가져오기 (광고용)
+  const { data: categories = [] } = useCategories();
+  const currentCategory = categories.find(cat => cat.slug === categorySlug);
 
-  // MIND 카테고리인 경우 두 쿼리 결과를 합침
-  const allCategoryArticles = isMindCategory
-    ? [...(psychologyQuery.data || []), ...(sexualityQuery.data || [])].sort(
-        (a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
-      )
-    : (regularQuery.data || []);
+  // 광고 가져오기
+  const { data: advertisement } = useAdvertisementsByCategory(currentCategory?.id || null, 'top');
 
-  const isLoading = isMindCategory
-    ? (psychologyQuery.isLoading || sexualityQuery.isLoading)
-    : regularQuery.isLoading;
-
-  const error = isMindCategory
-    ? (psychologyQuery.error || sexualityQuery.error)
-    : regularQuery.error;
   const bgClass = isDarkMode ? 'bg-gray-900' : 'bg-gray-50';
   const textClass = isDarkMode ? 'text-gray-100' : 'text-gray-900';
   const subtextClass = isDarkMode ? 'text-gray-300' : 'text-gray-600';
@@ -173,13 +149,6 @@ const CategoryPage: React.FC<CategoryPageProps> = ({
   // 서브카테고리별 필터링
   const filteredArticles = allCategoryArticles.filter(article => {
     if (selectedSubcategory === "ALL") return true;
-
-    // MIND 카테고리에서 "SEXUALITY (Special)" 탭 선택 시 sexuality 카테고리의 모든 기사 표시
-    if (isMindCategory && selectedSubcategory === "SEXUALITY (Special)") {
-      return article.categories?.slug === 'sexuality';
-    }
-
-    // 그 외에는 일반적인 서브카테고리 필터링
     return article.subcategories?.name === selectedSubcategory;
   });
 
@@ -197,19 +166,12 @@ const CategoryPage: React.FC<CategoryPageProps> = ({
 
   return <div className={`${bgClass} min-h-screen transition-colors duration-300`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center">
-        <div className="mb-8">
-          <h1 className={`text-2xl font-bold mb-4 tracking-widest ${textClass}`} style={{
-          fontFamily: 'Didot, "Bodoni MT", "Noto Serif Display", "URW Palladio L", P052, Sylfaen, serif'
-        }}>
-            {getCategoryDisplayName(category)}
-          </h1>
-          {filteredArticles.length > 0 && (
-            <p className={`text-sm ${subtextClass}`}>
-              총 {filteredArticles.length}개의 아티클
-            </p>
-          )}
-        </div>
-
+        {/* 광고 배너 - 광고가 있을 때만 표시 */}
+        {advertisement && (
+          <div className="mb-8">
+            <AdBanner advertisement={advertisement} isDarkMode={isDarkMode} position="top" />
+          </div>
+        )}
 
         {currentArticles.length > 0 ? (
           <>

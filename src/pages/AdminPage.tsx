@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { supabaseAny as supabase } from '../lib/supabase';
+import EditorApplicationsContent from '../components/admin/EditorApplicationsContent';
 
 interface AdminPageProps {
   isDarkMode: boolean;
   onBack: () => void;
 }
 
-type AdminMenuType = 'dashboard' | 'articles' | 'events' | 'creators' | 'categories' | 'media' | 'settings';
+type AdminMenuType = 'dashboard' | 'articles' | 'events' | 'creators' | 'editors' | 'categories' | 'advertisements' | 'media' | 'settings';
 
 // 사용자 타입 정의
 type UserRole = 'guest' | 'member' | 'subscriber' | 'admin';
@@ -78,7 +79,9 @@ const AdminPage: React.FC<AdminPageProps> = ({ isDarkMode, onBack, currentUser }
     { id: 'articles', label: '아티클 관리', icon: '📝' },
     { id: 'events', label: '이벤트 관리', icon: '🎉' },
     { id: 'creators', label: '크리에이터 관리', icon: '👥' },
+    { id: 'editors', label: '에디터 신청 관리', icon: '✍️' },
     { id: 'categories', label: '카테고리 관리', icon: '🏷️' },
+    { id: 'advertisements', label: '광고 관리', icon: '📢' },
     { id: 'media', label: '미디어 라이브러리', icon: '🖼️' },
     { id: 'settings', label: '설정', icon: '⚙️' }
   ];
@@ -143,7 +146,9 @@ const AdminPage: React.FC<AdminPageProps> = ({ isDarkMode, onBack, currentUser }
           {currentMenu === 'articles' && <ArticlesContent isDarkMode={isDarkMode} />}
           {currentMenu === 'events' && <EventsContent isDarkMode={isDarkMode} />}
           {currentMenu === 'creators' && <CreatorsContent isDarkMode={isDarkMode} />}
+          {currentMenu === 'editors' && <EditorApplicationsContent isDarkMode={isDarkMode} />}
           {currentMenu === 'categories' && <CategoriesContent isDarkMode={isDarkMode} />}
+          {currentMenu === 'advertisements' && <AdvertisementsContent isDarkMode={isDarkMode} />}
           {currentMenu === 'media' && <MediaContent isDarkMode={isDarkMode} />}
           {currentMenu === 'settings' && <SettingsContent isDarkMode={isDarkMode} />}
         </div>
@@ -152,75 +157,214 @@ const AdminPage: React.FC<AdminPageProps> = ({ isDarkMode, onBack, currentUser }
   );
 };
 
-// 1. 대시보드 - Supabase 실제 데이터 연동
+// 1. 대시보드 - Mixpanel 스타일 상세 분석
 const DashboardContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
   const [stats, setStats] = useState({
     totalArticles: 0,
     publishedArticles: 0,
     draftArticles: 0,
     totalViews: 0,
-    thisMonthEvents: 0,
+    totalLikes: 0,
+    avgViewsPerArticle: 0,
+    avgLikesPerArticle: 0,
     activeCreators: 0,
-    recentArticles: [] as Array<{title: string, status: string, updatedAt: string, id: string}>,
-    categoryStats: [] as Array<{category: string, count: number}>
+    activeEditors: 0,
+    topArticles: [] as Array<{
+      id: string;
+      title: string;
+      view_count: number;
+      like_count: number;
+      creators: { name: string } | null;
+      categories: { name: string } | null;
+    }>,
+    topCreators: [] as Array<{
+      id: string;
+      name: string;
+      article_count: number;
+      total_views: number;
+      total_likes: number;
+    }>,
+    categoryStats: [] as Array<{
+      category: string;
+      count: number;
+      views: number;
+      likes: number;
+    }>,
+    recentActivity: [] as Array<{
+      id: string;
+      title: string;
+      status: string;
+      updatedAt: string;
+      view_count: number;
+      like_count: number;
+    }>,
+    dailyStats: [] as Array<{
+      date: string;
+      views: number;
+      likes: number;
+      articles: number;
+    }>
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
 
   const textClass = isDarkMode ? 'text-gray-100' : 'text-gray-900';
   const cardClass = isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
 
   React.useEffect(() => {
-    const loadDashboardData = async () => {
-      try {
-        // 실제 Supabase에서 기사 데이터 가져오기
-        const { data: articles, error } = await supabase
-          .from('articles')
-          .select('id, title, status, published_at, updated_at, view_count, categories(name)')
-          .order('published_at', { ascending: false });
+    loadDashboardData();
+  }, [timeRange]);
 
-        if (error) throw error;
+  const loadDashboardData = async () => {
+    setIsLoading(true);
+    try {
+      // 1. 기사 데이터 가져오기 (조회수, 좋아요 포함)
+      const { data: articles, error: articlesError } = await supabase
+        .from('articles')
+        .select(`
+          id,
+          title,
+          status,
+          published_at,
+          updated_at,
+          view_count,
+          like_count,
+          categories(id, name),
+          creators(id, name)
+        `)
+        .order('published_at', { ascending: false });
 
-        const published = articles?.filter((a: any) => a.status === 'published') || [];
-        const drafts = articles?.filter((a: any) => a.status === 'draft') || [];
-        const totalViews = articles?.reduce((sum: number, a: any) => sum + (a.view_count || 0), 0) || 0;
+      if (articlesError) throw articlesError;
 
-        // 카테고리별 통계
-        const categoryMap: Record<string, number> = {};
-        articles?.forEach((a: any) => {
-          const cat = a.categories?.name || '미분류';
-          categoryMap[cat] = (categoryMap[cat] || 0) + 1;
-        });
-        const categoryStats = Object.entries(categoryMap)
-          .map(([category, count]) => ({ category, count }))
-          .sort((a, b) => b.count - a.count);
+      // 2. 크리에이터 수 가져오기
+      const { data: creators, error: creatorsError } = await supabase
+        .from('creators')
+        .select('id, name');
 
-        // 최근 기사 (상위 5개)
-        const recentArticles = (articles || []).slice(0, 5).map((a: any) => ({
+      // 3. 에디터 수 가져오기
+      const { data: editors, error: editorsError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('is_editor', true);
+
+      const published = articles?.filter((a: any) => a.status === 'published') || [];
+      const drafts = articles?.filter((a: any) => a.status === 'draft') || [];
+      const totalViews = articles?.reduce((sum: number, a: any) => sum + (a.view_count || 0), 0) || 0;
+      const totalLikes = articles?.reduce((sum: number, a: any) => sum + (a.like_count || 0), 0) || 0;
+
+      // 카테고리별 통계 (조회수, 좋아요 포함)
+      const categoryMap: Record<string, { count: number; views: number; likes: number }> = {};
+      articles?.forEach((a: any) => {
+        const cat = a.categories?.name || '미분류';
+        if (!categoryMap[cat]) {
+          categoryMap[cat] = { count: 0, views: 0, likes: 0 };
+        }
+        categoryMap[cat].count += 1;
+        categoryMap[cat].views += a.view_count || 0;
+        categoryMap[cat].likes += a.like_count || 0;
+      });
+      const categoryStats = Object.entries(categoryMap)
+        .map(([category, data]) => ({ category, ...data }))
+        .sort((a, b) => b.views - a.views);
+
+      // 상위 기사 (조회수 기준)
+      const topArticles = (articles || [])
+        .filter((a: any) => a.status === 'published')
+        .sort((a: any, b: any) => (b.view_count || 0) - (a.view_count || 0))
+        .slice(0, 10)
+        .map((a: any) => ({
           id: a.id,
           title: a.title,
-          status: a.status,
-          updatedAt: formatTimeAgo(a.updated_at || a.published_at)
+          view_count: a.view_count || 0,
+          like_count: a.like_count || 0,
+          creators: a.creators,
+          categories: a.categories,
         }));
 
-        setStats({
-          totalArticles: articles?.length || 0,
-          publishedArticles: published.length,
-          draftArticles: drafts.length,
-          totalViews,
-          thisMonthEvents: 0,
-          activeCreators: 12, // AI 에디터 수
-          recentArticles,
-          categoryStats
-        });
-      } catch (error) {
-        console.error('Dashboard data load error:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      // 크리에이터별 통계
+      const creatorMap: Record<string, { id: string; name: string; article_count: number; total_views: number; total_likes: number }> = {};
+      articles?.forEach((a: any) => {
+        if (a.creators && a.status === 'published') {
+          const creatorId = a.creators.id;
+          if (!creatorMap[creatorId]) {
+            creatorMap[creatorId] = {
+              id: creatorId,
+              name: a.creators.name,
+              article_count: 0,
+              total_views: 0,
+              total_likes: 0,
+            };
+          }
+          creatorMap[creatorId].article_count += 1;
+          creatorMap[creatorId].total_views += a.view_count || 0;
+          creatorMap[creatorId].total_likes += a.like_count || 0;
+        }
+      });
+      const topCreators = Object.values(creatorMap)
+        .sort((a, b) => b.total_views - a.total_views)
+        .slice(0, 10);
 
-    loadDashboardData();
-  }, []);
+      // 최근 활동 (상위 10개)
+      const recentActivity = (articles || []).slice(0, 10).map((a: any) => ({
+        id: a.id,
+        title: a.title,
+        status: a.status,
+        updatedAt: formatTimeAgo(a.updated_at || a.published_at),
+        view_count: a.view_count || 0,
+        like_count: a.like_count || 0,
+      }));
+
+      // 일별 통계 (최근 30일)
+      const dailyStats = generateDailyStats(articles || [], timeRange);
+
+      setStats({
+        totalArticles: articles?.length || 0,
+        publishedArticles: published.length,
+        draftArticles: drafts.length,
+        totalViews,
+        totalLikes,
+        avgViewsPerArticle: published.length > 0 ? Math.round(totalViews / published.length) : 0,
+        avgLikesPerArticle: published.length > 0 ? Math.round(totalLikes / published.length) : 0,
+        activeCreators: creators?.length || 0,
+        activeEditors: editors?.length || 0,
+        topArticles,
+        topCreators,
+        categoryStats,
+        recentActivity,
+        dailyStats,
+      });
+    } catch (error) {
+      console.error('Dashboard data load error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const generateDailyStats = (articles: any[], range: '7d' | '30d' | '90d') => {
+    const days = range === '7d' ? 7 : range === '30d' ? 30 : 90;
+    const stats: Array<{ date: string; views: number; likes: number; articles: number }> = [];
+
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+
+      const dayArticles = articles.filter((a: any) => {
+        if (!a.published_at) return false;
+        const pubDate = new Date(a.published_at).toISOString().split('T')[0];
+        return pubDate === dateStr;
+      });
+
+      stats.push({
+        date: `${date.getMonth() + 1}/${date.getDate()}`,
+        views: dayArticles.reduce((sum, a) => sum + (a.view_count || 0), 0),
+        likes: dayArticles.reduce((sum, a) => sum + (a.like_count || 0), 0),
+        articles: dayArticles.length,
+      });
+    }
+
+    return stats;
+  };
 
   // 시간 포맷팅 헬퍼
   const formatTimeAgo = (dateString: string) => {
@@ -244,34 +388,40 @@ const DashboardContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => 
     );
   }
 
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+    return num.toString();
+  };
+
   const dashboardStats = [
-    { 
-      label: '총 아티클', 
-      value: stats.totalArticles.toString(), 
-      change: '+12%', 
+    {
+      label: '총 아티클',
+      value: stats.totalArticles.toString(),
       icon: '📝',
-      subtext: `발행: ${stats.publishedArticles} | 임시저장: ${stats.draftArticles}`
+      subtext: `발행: ${stats.publishedArticles} | 임시: ${stats.draftArticles}`,
+      color: 'purple'
     },
-    { 
-      label: '총 조회수', 
-      value: `${(stats.totalViews / 1000).toFixed(1)}K`, 
-      change: '+8%', 
+    {
+      label: '총 조회수',
+      value: formatNumber(stats.totalViews),
       icon: '👁️',
-      subtext: '이번 달 조회수'
+      subtext: `평균: ${stats.avgViewsPerArticle}/기사`,
+      color: 'blue'
     },
-    { 
-      label: '이번달 이벤트', 
-      value: stats.thisMonthEvents.toString(), 
-      change: '+2', 
-      icon: '🎉',
-      subtext: '총 참가자 127명'
+    {
+      label: '총 좋아요',
+      value: formatNumber(stats.totalLikes),
+      icon: '❤️',
+      subtext: `평균: ${stats.avgLikesPerArticle}/기사`,
+      color: 'pink'
     },
-    { 
-      label: '활성 크리에이터', 
-      value: stats.activeCreators.toString(), 
-      change: '+3', 
+    {
+      label: '크리에이터/에디터',
+      value: `${stats.activeCreators}/${stats.activeEditors}`,
       icon: '⭐',
-      subtext: '이번 달 신규 3명'
+      subtext: '활성 기여자',
+      color: 'green'
     }
   ];
 
@@ -294,29 +444,44 @@ const DashboardContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => 
   };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
-        <h2 className={`text-2xl font-bold ${textClass}`}>대시보드</h2>
-        <div className="flex items-center space-x-2 text-sm">
-          <div className={`w-2 h-2 bg-green-500 rounded-full animate-pulse`}></div>
-          <span className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>실시간 업데이트</span>
+    <div className="space-y-6">
+      {/* 헤더 */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className={`text-2xl font-bold ${textClass}`}>분석 대시보드</h2>
+          <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mt-1`}>
+            실시간 콘텐츠 성과 분석 및 크리에이터 현황
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center space-x-2 text-sm">
+            <div className={`w-2 h-2 bg-green-500 rounded-full animate-pulse`}></div>
+            <span className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>실시간</span>
+          </div>
+          <select
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value as any)}
+            className={`px-3 py-2 border rounded-lg text-sm ${
+              isDarkMode
+                ? 'bg-gray-700 border-gray-600 text-white'
+                : 'bg-white border-gray-300 text-gray-900'
+            }`}
+          >
+            <option value="7d">최근 7일</option>
+            <option value="30d">최근 30일</option>
+            <option value="90d">최근 90일</option>
+          </select>
         </div>
       </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+
+      {/* KPI 카드 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {dashboardStats.map((stat, index) => (
-          <div key={index} className={`${cardClass} rounded-lg border p-6 hover:shadow-lg transition-shadow`}>
+          <div key={index} className={`${cardClass} rounded-lg border p-6 hover:shadow-lg transition-all`}>
             <div className="flex items-center justify-between mb-4">
-              <div className="text-2xl">{stat.icon}</div>
-              <div className={`text-xs px-2 py-1 rounded-full ${
-                stat.change.startsWith('+') 
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                  : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-              }`}>
-                {stat.change}
-              </div>
+              <div className="text-3xl">{stat.icon}</div>
             </div>
-            <div className={`text-2xl font-bold ${textClass} mb-1`}>{stat.value}</div>
+            <div className={`text-3xl font-bold ${textClass} mb-1`}>{stat.value}</div>
             <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mb-2`}>
               {stat.label}
             </div>
@@ -326,85 +491,201 @@ const DashboardContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => 
           </div>
         ))}
       </div>
-      
+
+      {/* 상위 기사 및 크리에이터 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* 상위 기사 (조회수 기준) */}
         <div className={`${cardClass} rounded-lg border p-6`}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className={`text-lg font-semibold ${textClass}`}>최근 아티클</h3>
-            <button className={`text-sm text-purple-600 hover:text-purple-700`}>
-              전체보기 →
-            </button>
-          </div>
-          <div className="space-y-4">
-            {stats.recentArticles.map((article, index) => (
-              <div key={index} className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h4 className={`text-sm font-medium ${textClass} mb-1`}>{article.title}</h4>
-                  <div className="flex items-center space-x-2">
-                    <span className={`text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 ${getStatusColor(article.status)}`}>
-                      {getStatusLabel(article.status)}
-                    </span>
-                    <span className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-                      {article.updatedAt}
-                    </span>
-                  </div>
-                </div>
-                <button className={`text-xs text-purple-600 hover:text-purple-700 ml-4`}>
-                  편집
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-        
-        <div className={`${cardClass} rounded-lg border p-6`}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className={`text-lg font-semibold ${textClass}`}>카테고리별 기사</h3>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className={`text-lg font-semibold ${textClass}`}>🏆 상위 기사 (조회수)</h3>
           </div>
           <div className="space-y-3">
-            {stats.categoryStats.length > 0 ? (
-              stats.categoryStats.slice(0, 6).map((cat, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <span className={`text-sm ${textClass}`}>{cat.category}</span>
-                  <div className="flex items-center gap-3">
-                    <div className="w-32 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-purple-600 rounded-full"
-                        style={{ width: `${Math.min((cat.count / stats.totalArticles) * 100 * 3, 100)}%` }}
-                      />
+            {stats.topArticles.length > 0 ? (
+              stats.topArticles.slice(0, 5).map((article, index) => (
+                <div
+                  key={article.id}
+                  className={`p-3 rounded-lg ${
+                    isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'
+                  } hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`text-lg font-bold ${textClass}`}>#{index + 1}</span>
+                        <h4 className={`text-sm font-medium ${textClass} line-clamp-1`}>
+                          {article.title}
+                        </h4>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs">
+                        {article.categories && (
+                          <span className={`px-2 py-1 rounded ${
+                            isDarkMode ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-100 text-purple-800'
+                          }`}>
+                            {article.categories.name}
+                          </span>
+                        )}
+                        {article.creators && (
+                          <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
+                            {article.creators.name}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <span className={`text-sm font-medium ${textClass} w-8 text-right`}>{cat.count}</span>
+                    <div className="flex flex-col items-end gap-1 ml-4">
+                      <div className="flex items-center gap-1 text-sm">
+                        <span>👁️</span>
+                        <span className={`font-semibold ${textClass}`}>
+                          {formatNumber(article.view_count)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs">
+                        <span>❤️</span>
+                        <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
+                          {formatNumber(article.like_count)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))
             ) : (
-              <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                아직 기사가 없습니다. AI 콘텐츠 파이프라인을 실행해보세요.
+              <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} text-center py-8`}>
+                발행된 기사가 없습니다.
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* 상위 크리에이터 */}
+        <div className={`${cardClass} rounded-lg border p-6`}>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className={`text-lg font-semibold ${textClass}`}>⭐ 상위 크리에이터 (조회수)</h3>
+          </div>
+          <div className="space-y-3">
+            {stats.topCreators.length > 0 ? (
+              stats.topCreators.slice(0, 5).map((creator, index) => (
+                <div
+                  key={creator.id}
+                  className={`p-3 rounded-lg ${
+                    isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'
+                  } hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className={`text-lg font-bold ${textClass}`}>#{index + 1}</span>
+                      <div>
+                        <h4 className={`text-sm font-medium ${textClass}`}>{creator.name}</h4>
+                        <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                          {creator.article_count}개 기사
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <div className="flex items-center gap-1 text-sm">
+                        <span>👁️</span>
+                        <span className={`font-semibold ${textClass}`}>
+                          {formatNumber(creator.total_views)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs">
+                        <span>❤️</span>
+                        <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
+                          {formatNumber(creator.total_likes)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} text-center py-8`}>
+                크리에이터 데이터가 없습니다.
               </p>
             )}
           </div>
         </div>
       </div>
 
-      <div className={`${cardClass} rounded-lg border p-6 mt-6`}>
-        <h3 className={`text-lg font-semibold ${textClass} mb-4`}>빠른 작업</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <button className="flex flex-col items-center p-4 rounded-lg bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors">
-            <span className="text-2xl mb-2">📝</span>
-            <span className={`text-sm font-medium ${textClass}`}>새 아티클</span>
-          </button>
-          <button className="flex flex-col items-center p-4 rounded-lg bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors">
-            <span className="text-2xl mb-2">🎉</span>
-            <span className={`text-sm font-medium ${textClass}`}>이벤트 생성</span>
-          </button>
-          <button className="flex flex-col items-center p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
-            <span className="text-2xl mb-2">👥</span>
-            <span className={`text-sm font-medium ${textClass}`}>크리에이터 추가</span>
-          </button>
-          <button className="flex flex-col items-center p-4 rounded-lg bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors">
-            <span className="text-2xl mb-2">📊</span>
-            <span className={`text-sm font-medium ${textClass}`}>분석 보기</span>
-          </button>
+      {/* 카테고리별 성과 및 최근 활동 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* 카테고리별 성과 */}
+        <div className={`${cardClass} rounded-lg border p-6`}>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className={`text-lg font-semibold ${textClass}`}>📊 카테고리별 성과</h3>
+          </div>
+          <div className="space-y-4">
+            {stats.categoryStats.length > 0 ? (
+              stats.categoryStats.slice(0, 6).map((cat, index) => (
+                <div key={index}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`text-sm font-medium ${textClass}`}>{cat.category}</span>
+                    <div className="flex items-center gap-3 text-xs">
+                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
+                        {cat.count}개
+                      </span>
+                      <span>👁️ {formatNumber(cat.views)}</span>
+                      <span>❤️ {formatNumber(cat.likes)}</span>
+                    </div>
+                  </div>
+                  <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-purple-600 rounded-full transition-all"
+                      style={{ width: `${(cat.views / (stats.totalViews || 1)) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} text-center py-8`}>
+                카테고리 데이터가 없습니다.
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* 최근 활동 */}
+        <div className={`${cardClass} rounded-lg border p-6`}>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className={`text-lg font-semibold ${textClass}`}>🕐 최근 활동</h3>
+          </div>
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {stats.recentActivity.map((article, index) => (
+              <div
+                key={article.id}
+                className={`p-3 rounded-lg ${
+                  isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'
+                } hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h4 className={`text-sm font-medium ${textClass} mb-1 line-clamp-1`}>
+                      {article.title}
+                    </h4>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        article.status === 'published'
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                          : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                      }`}>
+                        {getStatusLabel(article.status)}
+                      </span>
+                      <span className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                        {article.updatedAt}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 ml-4 text-xs">
+                    <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
+                      👁️ {article.view_count}
+                    </span>
+                    <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
+                      ❤️ {article.like_count}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -1378,6 +1659,435 @@ const MediaContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
       <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
         이미지, 비디오 업로드 및 관리 기능이 구현될 예정입니다.
       </p>
+    </div>
+  );
+};
+
+// 광고 관리 컴포넌트
+const AdvertisementsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
+  const [advertisements, setAdvertisements] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showEditor, setShowEditor] = useState(false);
+  const [editingAd, setEditingAd] = useState<any | null>(null);
+  const [formData, setFormData] = useState({
+    title: '',
+    image_url: '',
+    link_url: '',
+    category_id: '',
+    position: 'top' as 'top' | 'sidebar' | 'inline',
+    is_active: true,
+    start_date: '',
+    end_date: '',
+  });
+
+  const textClass = isDarkMode ? 'text-gray-100' : 'text-gray-900';
+  const cardClass = isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
+  const inputClass = isDarkMode
+    ? 'bg-gray-700 border-gray-600 text-white'
+    : 'bg-white border-gray-300 text-gray-900';
+
+  // 카테고리 및 광고 로드
+  React.useEffect(() => {
+    loadCategories();
+    loadAdvertisements();
+  }, []);
+
+  const loadCategories = async () => {
+    const { data } = await supabase
+      .from('categories')
+      .select('id, name, slug')
+      .order('name');
+    if (data) {
+      setCategories(data);
+    }
+  };
+
+  const loadAdvertisements = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('advertisements')
+        .select(`
+          id,
+          title,
+          image_url,
+          link_url,
+          category_id,
+          position,
+          is_active,
+          start_date,
+          end_date,
+          created_at,
+          categories(id, name, slug)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setAdvertisements(data || []);
+    } catch (error) {
+      console.error('광고 로드 오류:', error);
+      alert('광고를 불러오는데 실패했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEdit = (ad: any) => {
+    setEditingAd(ad);
+    setFormData({
+      title: ad.title,
+      image_url: ad.image_url || '',
+      link_url: ad.link_url || '',
+      category_id: ad.category_id || '',
+      position: ad.position,
+      is_active: ad.is_active,
+      start_date: ad.start_date ? ad.start_date.substring(0, 16) : '',
+      end_date: ad.end_date ? ad.end_date.substring(0, 16) : '',
+    });
+    setShowEditor(true);
+  };
+
+  const handleNew = () => {
+    setEditingAd(null);
+    setFormData({
+      title: '',
+      image_url: '',
+      link_url: '',
+      category_id: '',
+      position: 'top',
+      is_active: true,
+      start_date: '',
+      end_date: '',
+    });
+    setShowEditor(true);
+  };
+
+  const handleSave = async () => {
+    if (!formData.title.trim()) {
+      alert('제목을 입력해주세요.');
+      return;
+    }
+
+    try {
+      const adData = {
+        title: formData.title,
+        image_url: formData.image_url || null,
+        link_url: formData.link_url || null,
+        category_id: formData.category_id || null,
+        position: formData.position,
+        is_active: formData.is_active,
+        start_date: formData.start_date || null,
+        end_date: formData.end_date || null,
+      };
+
+      if (editingAd) {
+        // 수정
+        const { error } = await supabase
+          .from('advertisements')
+          .update(adData)
+          .eq('id', editingAd.id);
+
+        if (error) throw error;
+        alert('광고가 수정되었습니다.');
+      } else {
+        // 새 광고 생성
+        const { error } = await supabase
+          .from('advertisements')
+          .insert(adData);
+
+        if (error) throw error;
+        alert('광고가 생성되었습니다.');
+      }
+
+      await loadAdvertisements();
+      setShowEditor(false);
+      setEditingAd(null);
+    } catch (error: any) {
+      console.error('광고 저장 오류:', error);
+      alert(`광고 저장 실패: ${error.message}`);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('정말로 이 광고를 삭제하시겠습니까?')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('advertisements')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      alert('광고가 삭제되었습니다.');
+      await loadAdvertisements();
+    } catch (error: any) {
+      console.error('광고 삭제 오류:', error);
+      alert(`광고 삭제 실패: ${error.message}`);
+    }
+  };
+
+  const toggleActive = async (id: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('advertisements')
+        .update({ is_active: !currentStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+      await loadAdvertisements();
+    } catch (error: any) {
+      console.error('광고 상태 변경 오류:', error);
+      alert(`광고 상태 변경 실패: ${error.message}`);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-8">
+        <h2 className={`text-2xl font-bold ${textClass}`}>광고 관리</h2>
+        <button
+          onClick={handleNew}
+          className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+        >
+          <span>+</span>
+          새 광고 등록
+        </button>
+      </div>
+
+      {showEditor ? (
+        <div className={`${cardClass} rounded-lg border p-6`}>
+          <h3 className={`text-lg font-semibold ${textClass} mb-6`}>
+            {editingAd ? '광고 수정' : '새 광고 등록'}
+          </h3>
+
+          <div className="space-y-4">
+            <div>
+              <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                제목 <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${inputClass}`}
+                placeholder="광고 제목"
+              />
+            </div>
+
+            <div>
+              <label className={`block text-sm font-medium ${textClass} mb-2`}>이미지 URL</label>
+              <input
+                type="url"
+                value={formData.image_url}
+                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${inputClass}`}
+                placeholder="https://example.com/ad-image.jpg"
+              />
+              {formData.image_url && (
+                <div className="mt-2">
+                  <img
+                    src={formData.image_url}
+                    alt="광고 미리보기"
+                    className="h-32 rounded-lg border"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className={`block text-sm font-medium ${textClass} mb-2`}>링크 URL</label>
+              <input
+                type="url"
+                value={formData.link_url}
+                onChange={(e) => setFormData({ ...formData, link_url: e.target.value })}
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${inputClass}`}
+                placeholder="https://example.com"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className={`block text-sm font-medium ${textClass} mb-2`}>카테고리</label>
+                <select
+                  value={formData.category_id}
+                  onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${inputClass}`}
+                >
+                  <option value="">전체 (모든 페이지)</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium ${textClass} mb-2`}>위치</label>
+                <select
+                  value={formData.position}
+                  onChange={(e) => setFormData({ ...formData, position: e.target.value as any })}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${inputClass}`}
+                >
+                  <option value="top">상단</option>
+                  <option value="sidebar">사이드바</option>
+                  <option value="inline">인라인</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className={`block text-sm font-medium ${textClass} mb-2`}>시작일</label>
+                <input
+                  type="datetime-local"
+                  value={formData.start_date}
+                  onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${inputClass}`}
+                />
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium ${textClass} mb-2`}>종료일</label>
+                <input
+                  type="datetime-local"
+                  value={formData.end_date}
+                  onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${inputClass}`}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.is_active}
+                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                  className="mr-2 w-4 h-4"
+                />
+                <span className={`text-sm ${textClass}`}>활성화</span>
+              </label>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button
+                onClick={handleSave}
+                className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                저장
+              </button>
+              <button
+                onClick={() => {
+                  setShowEditor(false);
+                  setEditingAd(null);
+                }}
+                className={`px-6 py-2 border rounded-lg transition-colors ${
+                  isDarkMode
+                    ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div>
+          {advertisements.length === 0 ? (
+            <div className={`${cardClass} rounded-lg border p-8 text-center`}>
+              <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                등록된 광고가 없습니다. 새 광고를 등록하세요.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {advertisements.map((ad) => (
+                <div key={ad.id} className={`${cardClass} rounded-lg border p-6`}>
+                  <div className="flex items-start gap-4">
+                    {ad.image_url && (
+                      <img
+                        src={ad.image_url}
+                        alt={ad.title}
+                        className="w-32 h-20 object-cover rounded-lg"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className={`text-lg font-semibold ${textClass}`}>{ad.title}</h3>
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          ad.is_active
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                            : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
+                        }`}>
+                          {ad.is_active ? '활성' : '비활성'}
+                        </span>
+                        {ad.categories && (
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            isDarkMode ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-100 text-purple-800'
+                          }`}>
+                            {ad.categories.name}
+                          </span>
+                        )}
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {ad.position === 'top' ? '상단' : ad.position === 'sidebar' ? '사이드바' : '인라인'}
+                        </span>
+                      </div>
+                      <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} space-y-1`}>
+                        {ad.link_url && <p>링크: {ad.link_url}</p>}
+                        {ad.start_date && (
+                          <p>기간: {new Date(ad.start_date).toLocaleDateString('ko-KR')} ~ {ad.end_date ? new Date(ad.end_date).toLocaleDateString('ko-KR') : '종료일 없음'}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => toggleActive(ad.id, ad.is_active)}
+                        className={`px-3 py-1 rounded text-sm ${
+                          ad.is_active
+                            ? 'bg-gray-600 hover:bg-gray-700 text-white'
+                            : 'bg-green-600 hover:bg-green-700 text-white'
+                        }`}
+                      >
+                        {ad.is_active ? '비활성화' : '활성화'}
+                      </button>
+                      <button
+                        onClick={() => handleEdit(ad)}
+                        className="px-3 py-1 rounded text-sm bg-purple-600 hover:bg-purple-700 text-white"
+                      >
+                        수정
+                      </button>
+                      <button
+                        onClick={() => handleDelete(ad.id)}
+                        className="px-3 py-1 rounded text-sm bg-red-600 hover:bg-red-700 text-white"
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

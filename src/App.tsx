@@ -20,6 +20,7 @@ import AdvertisePage from './pages/AdvertisePage';
 import PrivacyPage from './pages/PrivacyPage';
 import NoticesPage from './pages/NoticesPage';
 import WebAppsPage from './pages/WebAppsPage';
+import MyPage from './pages/MyPage';
 import InitialAdPopup from './components/InitialAdPopup';
 
 // React Query 클라이언트 생성
@@ -138,6 +139,8 @@ const AppContent: React.FC = () => {
           isDarkMode={isDarkMode}
           onBack={() => setCurrentPage('home')}
         />;
+      case 'mypage':
+        return <MyPage isDarkMode={isDarkMode} onBack={() => setCurrentPage('home')} />;
       case 'subscription':
         return <SubscriptionPage isDarkMode={isDarkMode} onBack={() => setCurrentPage('home')} />;
       case 'about':
