@@ -31,9 +31,26 @@ const queryClient = new QueryClient({
       gcTime: 10 * 60 * 1000, // 10분 (cacheTime → gcTime으로 변경)
       retry: 1,
       refetchOnWindowFocus: false,
+      // Chrome 프로필별 캐시 문제 방지
+      refetchOnMount: true,
+      refetchOnReconnect: true,
     },
   },
 });
+
+// URL 파라미터로 캐시 클리어 지원 (?clearCache=true)
+if (typeof window !== 'undefined') {
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('clearCache') === 'true') {
+    console.log('🧹 캐시 클리어 중...');
+    queryClient.clear();
+    localStorage.clear();
+    sessionStorage.clear();
+    // URL에서 파라미터 제거
+    window.history.replaceState({}, document.title, window.location.pathname);
+    console.log('✅ 캐시 클리어 완료!');
+  }
+}
 
 // 앱 내부 컴포넌트 (AuthProvider 내부에서 사용)
 const AppContent: React.FC = () => {
