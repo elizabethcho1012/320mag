@@ -47,13 +47,18 @@ type DailyNews = {
   status: string;
 };
 
-// 발행된 기사 조회 (프론트엔드용) - 에러 처리 강화
+// 발행된 기사 조회 (프론트엔드용) - 에러 처리 강화 + 타임아웃
 export const usePublishedArticles = () => {
   return useQuery({
     queryKey: ['articles', 'published'],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase
+        // 10초 타임아웃 설정
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Request timeout')), 10000)
+        );
+
+        const queryPromise = supabase
           .from('articles')
           .select(`
             *,
@@ -65,20 +70,24 @@ export const usePublishedArticles = () => {
           .eq('status', 'published')
           .order('published_at', { ascending: false });
 
+        const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
+
         if (error) {
           console.error('Published articles 쿼리 오류:', error);
-          throw error;
+          // 에러가 발생해도 빈 배열 반환 (앱이 멈추지 않도록)
+          return [];
         }
-        
+
         console.log('Published articles 조회 성공:', data?.length, '개');
         return data || [];
       } catch (error) {
         console.error('usePublishedArticles 에러:', error);
-        throw error;
+        // 에러가 발생해도 빈 배열 반환
+        return [];
       }
     },
     retry: 1,
-    staleTime: 30 * 1000, // 30초 (더 자주 새 데이터 확인)
+    staleTime: 30 * 1000, // 30초
     gcTime: 2 * 60 * 1000, // 2분
   });
 };
@@ -121,13 +130,18 @@ export const useArticlesByCategory = (categorySlug: string) => {
   });
 };
 
-// Featured 기사 조회 - 에러 처리 강화
+// Featured 기사 조회 - 에러 처리 강화 + 타임아웃
 export const useFeaturedArticles = () => {
   return useQuery({
     queryKey: ['articles', 'featured'],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase
+        // 10초 타임아웃 설정
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Request timeout')), 10000)
+        );
+
+        const queryPromise = supabase
           .from('articles')
           .select(`
             *,
@@ -140,20 +154,24 @@ export const useFeaturedArticles = () => {
           .order('published_at', { ascending: false })
           .limit(5);
 
+        const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
+
         if (error) {
           console.error('Featured articles 쿼리 오류:', error);
-          throw error;
+          // 에러가 발생해도 빈 배열 반환
+          return [];
         }
-        
+
         console.log('Featured articles 조회 성공:', data?.length, '개');
         return data || [];
       } catch (error) {
         console.error('useFeaturedArticles 에러:', error);
-        throw error;
+        // 에러가 발생해도 빈 배열 반환
+        return [];
       }
     },
     retry: 1,
-    staleTime: 30 * 1000, // 30초 (더 자주 새 데이터 확인)
+    staleTime: 30 * 1000, // 30초
   });
 };
 
@@ -354,22 +372,31 @@ export const useCreators = () => {
     queryKey: ['creators'],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase
+        // 10초 타임아웃 설정
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Request timeout')), 10000)
+        );
+
+        const queryPromise = supabase
           .from('creators')
           .select('*')
           .eq('status', 'active')
           .order('name');
 
+        const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
+
         if (error) {
           console.error('Creators 쿼리 오류:', error);
-          throw error;
+          // 에러가 발생해도 빈 배열 반환
+          return [];
         }
 
         console.log('Creators 조회 성공:', (data || []).length, '개');
         return data || [];
       } catch (error) {
         console.error('useCreators 에러:', error);
-        throw error;
+        // 에러가 발생해도 빈 배열 반환
+        return [];
       }
     },
     retry: 1,
