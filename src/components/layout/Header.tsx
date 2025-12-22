@@ -319,13 +319,13 @@ const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* 네비게이션 */}
-          <div className={`border-t py-4 ${isDarkMode ? 'border-gray-700' : highContrast ? 'border-black' : 'border-gray-100'}`}>
-            <nav className="flex justify-center space-x-12">
+          <div className={`border-t py-4 ${isDarkMode ? 'border-gray-700' : highContrast ? 'border-black' : 'border-gray-100'} overflow-x-auto`}>
+            <nav className="flex justify-start md:justify-center space-x-6 md:space-x-12 px-4 md:px-0 min-w-max md:min-w-0">
               {mainNavigation.map((item) => (
                 <button
                   key={item.id}
                   onClick={() => setCurrentPage(item.id)}
-                  className={`text-xs font-light transition-colors duration-200 uppercase tracking-wide hover:text-purple-600 ${
+                  className={`text-xs font-light transition-colors duration-200 uppercase tracking-wide hover:text-purple-600 whitespace-nowrap ${
                     currentPage === item.id
                       ? 'text-purple-600 border-b-2 border-purple-600 pb-1'
                       : isDarkMode
