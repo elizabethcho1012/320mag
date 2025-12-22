@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Footer from '../components/layout/Footer';
 import AdBannerSlider from '../components/AdBannerSlider';
 import { usePublishedArticles, useFeaturedArticles, useCreators } from '../hooks/useArticles';
+import { useHomepageSettings, type HomepageSettings } from '../hooks/useHomepageSettings';
+import { useAdvertisementsByCategory } from '../hooks/useAdvertisements';
 
 interface HomePageProps {
   onArticleClick: (id: number | string) => void;
@@ -11,10 +13,16 @@ interface HomePageProps {
 }
 
 const HomePage: React.FC<HomePageProps> = ({ onArticleClick, isDarkMode, highContrast, onNavigate }) => {
+  // 홈페이지 설정 가져오기
+  const { data: homepageSettings } = useHomepageSettings() as { data: HomepageSettings | undefined };
+
   // Supabase에서 실제 데이터 가져오기
   const { data: dbArticles = [], isLoading: articlesLoading, error: articlesError } = usePublishedArticles();
   const { data: dbFeaturedArticles = [], isLoading: featuredLoading } = useFeaturedArticles();
   const { data: dbCreators = [] } = useCreators();
+
+  // 슬라이드용 광고 가져오기
+  const { data: slideAds = [] } = useAdvertisementsByCategory(null, 'inline');
 
   const bgClass = isDarkMode
     ? 'bg-gray-900'
@@ -74,10 +82,81 @@ const HomePage: React.FC<HomePageProps> = ({ onArticleClick, isDarkMode, highCon
     publishedAt: article.published_at
   });
 
-  // Featured 기사 (DB에서 featured=true인 것 또는 최근 3개)
-  const featuredArticles = dbFeaturedArticles.length > 0
-    ? dbFeaturedArticles.map(transformArticle)
-    : dbArticles.slice(0, 3).map(transformArticle);
+  // 설정에 따른 슬라이드 구성
+  const getSlideArticles = () => {
+    if (!homepageSettings) {
+      // 설정이 없으면 기본값 사용
+      return dbFeaturedArticles.length > 0
+        ? dbFeaturedArticles.slice(0, 3).map(transformArticle)
+        : dbArticles.slice(0, 3).map(transformArticle);
+    }
+
+    const { article_slides, slide_categories } = homepageSettings;
+    const result: any[] = [];
+
+    // 설정된 카테고리의 최신 기사 가져오기
+    const categoryMap: { [key: string]: string } = {
+      'fashion': '패션',
+      'beauty': '뷰티',
+      'travel': '여행',
+      'food': '푸드',
+      'mind': '심리',
+      'fitness': '운동',
+      'housing': '하우징',
+      'sexuality': '섹슈얼리티'
+    };
+
+    // 설정된 카테고리에서 기사 수집
+    for (const categorySlug of slide_categories) {
+      const categoryName = categoryMap[categorySlug];
+      if (!categoryName) continue;
+
+      const categoryArticles = dbArticles.filter(
+        (article: any) => article.categories?.name === categoryName || article.categories?.slug === categorySlug
+      );
+
+      if (categoryArticles.length > 0) {
+        result.push(categoryArticles[0]);
+      }
+
+      if (result.length >= article_slides) break;
+    }
+
+    // 부족하면 최신 기사로 채우기
+    if (result.length < article_slides) {
+      const remainingArticles = dbArticles.filter(
+        (article: any) => !result.find((r: any) => r.id === article.id)
+      );
+      result.push(...remainingArticles.slice(0, article_slides - result.length));
+    }
+
+    return result.map(transformArticle);
+  };
+
+  const slideArticles = getSlideArticles();
+
+  // 광고를 슬라이드 아이템으로 변환
+  const transformAd = (ad: any) => ({
+    id: `ad-${ad.id}`,
+    title: ad.title,
+    excerpt: '광고',
+    image: ad.image_url,
+    subcategory: 'AD',
+    category: 'advertisement',
+    creator: '',
+    publishedAt: ad.created_at,
+    isAd: true,
+    linkUrl: ad.link_url
+  });
+
+  // 슬라이드용 광고 준비
+  const adSlides = homepageSettings && slideAds && slideAds.length > 0
+    ? slideAds.slice(0, homepageSettings.ad_slides).map(transformAd)
+    : [];
+
+  // 기사와 광고를 섞어서 최종 슬라이드 구성
+  const featuredArticles = [...slideArticles, ...adSlides]
+    .slice(0, homepageSettings?.total_slides || 5);
 
   // 이미 사용된 기사 ID 추적 (중복 방지)
   const usedArticleIds = new Set<string>();
@@ -202,6 +281,8 @@ const HomePage: React.FC<HomePageProps> = ({ onArticleClick, isDarkMode, highCon
           featuredArticles={featuredArticles}
           onArticleClick={onArticleClick}
           isDarkMode={isDarkMode}
+          autoplayEnabled={homepageSettings ? homepageSettings.autoplay_enabled : true}
+          autoplayInterval={homepageSettings ? homepageSettings.autoplay_interval : 5000}
         />
 
         {/* 카테고리별 콘텐츠 섹션 */}
@@ -236,20 +317,22 @@ const HeroSlideLocal: React.FC<{
   featuredArticles: any[];
   onArticleClick: (id: number | string) => void;
   isDarkMode: boolean;
-}> = ({ featuredArticles, onArticleClick }) => {
+  autoplayEnabled?: boolean;
+  autoplayInterval?: number;
+}> = ({ featuredArticles, onArticleClick, autoplayEnabled = true, autoplayInterval = 5000 }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
 
   useEffect(() => {
-    if (featuredArticles.length <= 1) return;
+    if (featuredArticles.length <= 1 || !autoplayEnabled) return;
 
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % featuredArticles.length);
-    }, 5000);
+    }, autoplayInterval);
 
     return () => clearInterval(interval);
-  }, [featuredArticles.length]);
+  }, [featuredArticles.length, autoplayEnabled, autoplayInterval]);
 
   // 터치 스와이프 핸들러
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -296,7 +379,13 @@ const HeroSlideLocal: React.FC<{
             <div
               key={article.id}
               className="w-full flex-shrink-0 relative cursor-pointer"
-              onClick={() => onArticleClick(article.id)}
+              onClick={() => {
+                if (article.isAd && article.linkUrl) {
+                  window.open(article.linkUrl, '_blank', 'noopener,noreferrer');
+                } else if (!article.isAd) {
+                  onArticleClick(article.id);
+                }
+              }}
             >
               <img
                 src={article.image || 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=800&h=600&fit=crop'}

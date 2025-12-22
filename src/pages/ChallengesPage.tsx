@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import { VoiceRecorder } from '../components/VoiceRecorder';
 import { supabase } from '../integrations/supabase/client';
 import { useAuth } from '../contexts/AuthContext';
 import { Calendar, Users, Clock } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Button } from '../components/ui/button';
+import { Textarea } from '../components/ui/textarea';
 
 interface Challenge {
   id: string;
@@ -249,22 +250,16 @@ const ChallengesPage = ({ isDarkMode }: ChallengesPageProps) => {
                     </pre>
                   </div>
 
-                  {!selectedChallenge.user_participated ? (
-                    <VoiceRecorder
-                      challengeId={selectedChallenge.id}
-                      maxDuration={selectedChallenge.max_duration}
-                      onSubmitSuccess={handleSubmitSuccess}
-                    />
-                  ) : (
-                    <Card>
-                      <CardContent className="py-8 text-center">
-                        <p className="text-lg font-semibold">이미 참여하셨습니다!</p>
-                        <p className={`mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                          참여해 주셔서 감사합니다.
-                        </p>
-                      </CardContent>
-                    </Card>
-                  )}
+                  <Card>
+                    <CardContent className="py-8 text-center">
+                      <p className="text-lg font-semibold">챌린지 참여 기능</p>
+                      <p className={`mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {selectedChallenge.user_participated
+                          ? '이미 참여하셨습니다! 감사합니다.'
+                          : '챌린지 참여 기능은 준비 중입니다.'}
+                      </p>
+                    </CardContent>
+                  </Card>
                 </div>
               </div>
             </div>

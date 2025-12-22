@@ -1,13 +1,10 @@
 // 챌린지 참여 폼
-// 텍스트 또는 음성으로 참여 가능
+// 텍스트로 참여 가능
 
 import { useState } from 'react';
-import { VoiceRecorder } from './VoiceRecorder';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Mic, Type } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { CreateChallengeRequest } from '@/types/ai-editor';
 
@@ -24,7 +21,6 @@ export function ChallengeForm({
   onSuccess,
   onCancel,
 }: ChallengeFormProps) {
-  const [mode, setMode] = useState<'text' | 'voice'>('text');
   const [textContent, setTextContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -66,59 +62,6 @@ export function ChallengeForm({
     }
   };
 
-  const handleVoiceSubmit = async (
-    audioBlob: Blob,
-    transcribedText: string,
-    duration: number
-  ) => {
-    setIsSubmitting(true);
-
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        alert('로그인이 필요합니다');
-        return;
-      }
-
-      // 1. 음성 파일을 Supabase Storage에 업로드
-      const fileName = `challenges/${user.id}/${Date.now()}.webm`;
-
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('voice-challenges')
-        .upload(fileName, audioBlob);
-
-      if (uploadError) throw uploadError;
-
-      // 2. 공개 URL 생성
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from('voice-challenges').getPublicUrl(fileName);
-
-      // 3. 챌린지 데이터 저장
-      const challenge: CreateChallengeRequest = {
-        article_id: articleId,
-        participation_type: 'voice',
-        text_content: transcribedText,
-        voice_url: publicUrl,
-        voice_duration: duration,
-      };
-
-      const { error } = await supabase.from('challenges').insert(challenge);
-
-      if (error) throw error;
-
-      alert('챌린지에 참여했습니다!');
-      onSuccess();
-    } catch (error) {
-      console.error('Error submitting voice challenge:', error);
-      alert('참여에 실패했습니다. 다시 시도해주세요.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   return (
     <Card className="p-6 bg-purple-50 border-purple-200">
@@ -132,20 +75,8 @@ export function ChallengeForm({
           <h3 className="text-xl font-bold text-gray-900">{challengeQuestion}</h3>
         </div>
 
-        {/* 텍스트 / 음성 선택 */}
-        <Tabs value={mode} onValueChange={(v) => setMode(v as 'text' | 'voice')}>
-          <TabsList className="grid w-full grid-cols-2 h-14">
-            <TabsTrigger value="text" className="gap-2 text-base">
-              <Type className="w-5 h-5" />
-              텍스트로 작성
-            </TabsTrigger>
-            <TabsTrigger value="voice" className="gap-2 text-base">
-              <Mic className="w-5 h-5" />
-              음성으로 녹음
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="text" className="space-y-4">
+        {/* 텍스트 입력 */}
+        <div className="space-y-4">
             <Textarea
               placeholder="당신의 생각을 자유롭게 적어주세요..."
               value={textContent}
@@ -176,12 +107,7 @@ export function ChallengeForm({
                 {isSubmitting ? '제출 중...' : '참여하기'}
               </Button>
             </div>
-          </TabsContent>
-
-          <TabsContent value="voice">
-            <VoiceRecorder onComplete={handleVoiceSubmit} onCancel={onCancel} />
-          </TabsContent>
-        </Tabs>
+        </div>
 
         {/* 안내 메시지 */}
         <div className="bg-white rounded-lg p-4 text-sm text-gray-600">

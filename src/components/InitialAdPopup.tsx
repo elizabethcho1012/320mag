@@ -16,8 +16,8 @@ const InitialAdPopup: React.FC = () => {
   const { profile } = useAuth();
 
   useEffect(() => {
-    // 프리미엄 회원은 광고를 보지 않음
-    if (profile?.is_premium) {
+    // 구독자나 관리자는 광고를 보지 않음
+    if (profile?.role === 'subscriber' || profile?.role === 'admin') {
       return;
     }
 
@@ -34,14 +34,24 @@ const InitialAdPopup: React.FC = () => {
 
   const fetchInitialAd = async () => {
     try {
-      const { data, error } = await supabase
-        .from('initial_ads')
-        .select('*')
-        .eq('is_active', true)
-        .limit(1)
-        .single();
+      const now = new Date().toISOString();
 
-      if (error) throw error;
+      const { data, error } = await supabase
+        .from('advertisements')
+        .select('id, title, image_url, link_url, is_active')
+        .eq('is_active', true)
+        .eq('position', 'inline')
+        .or(`start_date.is.null,start_date.lte.${now}`)
+        .or(`end_date.is.null,end_date.gte.${now}`)
+        .limit(1)
+        .maybeSingle();
+
+      // maybeSingle()은 결과가 없어도 에러를 던지지 않음
+      if (error) {
+        console.error('초기 광고 로딩 실패:', error);
+        return;
+      }
+
       if (data) {
         setAd(data);
         setIsVisible(true);

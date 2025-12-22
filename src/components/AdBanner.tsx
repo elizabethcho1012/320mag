@@ -4,7 +4,7 @@ import { Advertisement } from '../hooks/useAdvertisements';
 interface AdBannerProps {
   advertisement: Advertisement | null;
   isDarkMode: boolean;
-  position?: 'top' | 'sidebar' | 'inline';
+  position?: 'top' | 'bottom' | 'sidebar' | 'inline';
 }
 
 const AdBanner: React.FC<AdBannerProps> = ({ advertisement, isDarkMode, position = 'top' }) => {
@@ -18,6 +18,7 @@ const AdBanner: React.FC<AdBannerProps> = ({ advertisement, isDarkMode, position
   // 위치별 크기 설정
   const sizeClasses = {
     top: 'h-32 md:h-40',
+    bottom: 'h-32 md:h-40',
     sidebar: 'h-64',
     inline: 'h-48',
   };

@@ -108,7 +108,8 @@ const CategoryPage: React.FC<CategoryPageProps> = ({
   const currentCategory = categories.find(cat => cat.slug === categorySlug);
 
   // 광고 가져오기
-  const { data: advertisement } = useAdvertisementsByCategory(currentCategory?.id || null, 'top');
+  const { data: topAdvertisement } = useAdvertisementsByCategory(currentCategory?.id || null, 'top');
+  const { data: bottomAdvertisement } = useAdvertisementsByCategory(currentCategory?.id || null, 'bottom');
 
   const bgClass = isDarkMode ? 'bg-gray-900' : 'bg-gray-50';
   const textClass = isDarkMode ? 'text-gray-100' : 'text-gray-900';
@@ -166,10 +167,10 @@ const CategoryPage: React.FC<CategoryPageProps> = ({
 
   return <div className={`${bgClass} min-h-screen transition-colors duration-300`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center">
-        {/* 광고 배너 - 광고가 있을 때만 표시 */}
-        {advertisement && (
+        {/* 상단 광고 배너 */}
+        {topAdvertisement && (
           <div className="mb-8">
-            <AdBanner advertisement={advertisement} isDarkMode={isDarkMode} position="top" />
+            <AdBanner advertisement={topAdvertisement} isDarkMode={isDarkMode} position="top" />
           </div>
         )}
 
@@ -207,7 +208,7 @@ const CategoryPage: React.FC<CategoryPageProps> = ({
 
             {/* 페이지네이션 */}
             {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-2">
+              <div className="flex justify-center items-center gap-2 mb-8">
                 {/* 이전 버튼 */}
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
@@ -264,6 +265,13 @@ const CategoryPage: React.FC<CategoryPageProps> = ({
                 >
                   다음
                 </button>
+              </div>
+            )}
+
+            {/* 하단 광고 배너 */}
+            {bottomAdvertisement && (
+              <div className="mt-8">
+                <AdBanner advertisement={bottomAdvertisement} isDarkMode={isDarkMode} position="bottom" />
               </div>
             )}
           </>

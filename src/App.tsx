@@ -21,7 +21,9 @@ import PrivacyPage from './pages/PrivacyPage';
 import NoticesPage from './pages/NoticesPage';
 import WebAppsPage from './pages/WebAppsPage';
 import MyPage from './pages/MyPage';
+import PWAAppsPage from './pages/pwa/PWAAppsPage';
 import InitialAdPopup from './components/InitialAdPopup';
+import PWAUpdatePrompt from './components/PWAUpdatePrompt';
 
 // React Query 클라이언트 생성
 const queryClient = new QueryClient({
@@ -155,6 +157,12 @@ const AppContent: React.FC = () => {
         return <AdminPage
           isDarkMode={isDarkMode}
           onBack={() => setCurrentPage('home')}
+          currentUser={profile ? {
+            id: profile.id,
+            username: profile.username,
+            role: profile.role,
+            email: profile.email
+          } : null}
         />;
       case 'mypage':
         return <MyPage isDarkMode={isDarkMode} onBack={() => setCurrentPage('home')} />;
@@ -170,6 +178,8 @@ const AppContent: React.FC = () => {
         return <NoticesPage isDarkMode={isDarkMode} onBack={() => setCurrentPage('home')} />;
       case 'webapps':
         return <WebAppsPage isDarkMode={isDarkMode} onBack={() => setCurrentPage('home')} />;
+      case 'apps':
+        return <PWAAppsPage />;
       case 'fashion':
         return <CategoryPage category="패션" onArticleClick={handleArticleClick} isDarkMode={isDarkMode} />;
       case 'beauty':
@@ -201,6 +211,9 @@ const AppContent: React.FC = () => {
         }`}>
           {/* 초기 진입 광고 팝업 (프리미엄 회원 제외) */}
           <InitialAdPopup />
+
+          {/* PWA 업데이트 알림 */}
+          <PWAUpdatePrompt />
 
           <Header
             currentPage={currentPage}

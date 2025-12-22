@@ -40,6 +40,7 @@ export function getGuidelinesPrompt(): string {
 "인생의 두 번째 결혼식, 진짜 나를 보여주는 웨딩 스타일"
 
 🚫 금지 표현:
+- "에이진 세대" 또는 "에이진세대" → ✅ "에이진" (에이진은 이미 generation 의미 포함)
 - "젊어 보이기 위해" → ✅ "건강하고 활력 있게"
 - "나이를 숨기려면" → ✅ "나이에 맞게 당당하게"
 - "늙지 않으려면" → ✅ "우아하게 나이 들기 위해"
@@ -128,6 +129,8 @@ export function validateContent(title: string, content: string, category: string
   const forbiddenPhrases = [
     { phrase: '중년', suggestion: 'AGene / Ageless Generation / 에이진 / 40-50대' },
     { phrase: '시니어', suggestion: 'AGene / Ageless Generation / 에이진 / 40-50대' },
+    { phrase: '에이진 세대', suggestion: '에이진 (에이진은 이미 generation의 의미를 포함)' },
+    { phrase: '에이진세대', suggestion: '에이진 (에이진은 이미 generation의 의미를 포함)' },
     { phrase: '젊어 보이', suggestion: '건강하고 활력 있게' },
     { phrase: '나이를 숨기', suggestion: '나이에 맞게 당당하게' },
     { phrase: '늙지 않', suggestion: '우아하게 나이 들기' },

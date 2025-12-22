@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { supabaseAny as supabase } from '../lib/supabase';
 import EditorApplicationsContent from '../components/admin/EditorApplicationsContent';
+import { useHomepageSettings, useUpdateHomepageSettings } from '../hooks/useHomepageSettings';
+import { useCategories } from '../hooks/useArticles';
 
 interface AdminPageProps {
   isDarkMode: boolean;
@@ -2094,12 +2096,239 @@ const AdvertisementsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }
 
 const SettingsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
   const textClass = isDarkMode ? 'text-gray-100' : 'text-gray-900';
+  const cardClass = isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
+  const inputClass = isDarkMode
+    ? 'bg-gray-700 border-gray-600 text-gray-100'
+    : 'bg-white border-gray-300 text-gray-900';
+
+  const { data: settings, isLoading } = useHomepageSettings();
+  const { data: categories = [] } = useCategories();
+  const updateSettings = useUpdateHomepageSettings();
+
+  const [formData, setFormData] = useState({
+    total_slides: 5,
+    article_slides: 3,
+    ad_slides: 2,
+    slide_categories: ['fashion', 'beauty', 'travel'],
+    autoplay_enabled: true,
+    autoplay_interval: 5000,
+  });
+
+  // 설정 로드 완료 시 폼 데이터 업데이트
+  React.useEffect(() => {
+    if (settings) {
+      setFormData({
+        total_slides: settings.total_slides,
+        article_slides: settings.article_slides,
+        ad_slides: settings.ad_slides,
+        slide_categories: settings.slide_categories,
+        autoplay_enabled: settings.autoplay_enabled,
+        autoplay_interval: settings.autoplay_interval,
+      });
+    }
+  }, [settings]);
+
+  const handleSave = async () => {
+    try {
+      await updateSettings.mutateAsync(formData);
+      alert('홈페이지 설정이 저장되었습니다.');
+    } catch (error) {
+      console.error('설정 저장 실패:', error);
+      alert('설정 저장에 실패했습니다.');
+    }
+  };
+
+  const toggleCategory = (categorySlug: string) => {
+    setFormData(prev => ({
+      ...prev,
+      slide_categories: prev.slide_categories.includes(categorySlug)
+        ? prev.slide_categories.filter(c => c !== categorySlug)
+        : [...prev.slide_categories, categorySlug]
+    }));
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-20">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <h2 className={`text-2xl font-bold ${textClass} mb-4`}>설정</h2>
-      <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-        시스템 설정 및 사용자 권한 관리 기능이 구현될 예정입니다.
-      </p>
+    <div className="max-w-4xl">
+      <h2 className={`text-2xl font-bold ${textClass} mb-6`}>홈페이지 설정</h2>
+
+      <div className="space-y-6">
+        {/* 슬라이드 개수 설정 */}
+        <div className={`${cardClass} rounded-lg border p-6`}>
+          <h3 className={`text-lg font-semibold ${textClass} mb-4`}>메인 슬라이드 설정</h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div>
+              <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                전체 슬라이드 수
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="20"
+                value={formData.total_slides}
+                onChange={(e) => setFormData({ ...formData, total_slides: parseInt(e.target.value) })}
+                className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+              />
+              <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
+                1-20개 사이
+              </p>
+            </div>
+
+            <div>
+              <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                기사 슬라이드 수
+              </label>
+              <input
+                type="number"
+                min="0"
+                max={formData.total_slides}
+                value={formData.article_slides}
+                onChange={(e) => setFormData({ ...formData, article_slides: parseInt(e.target.value) })}
+                className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+              />
+              <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
+                최신 기사 표시
+              </p>
+            </div>
+
+            <div>
+              <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                광고 슬라이드 수
+              </label>
+              <input
+                type="number"
+                min="0"
+                max={formData.total_slides}
+                value={formData.ad_slides}
+                onChange={(e) => setFormData({ ...formData, ad_slides: parseInt(e.target.value) })}
+                className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+              />
+              <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
+                활성 광고 표시
+              </p>
+            </div>
+          </div>
+
+          <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+            <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              💡 기사 슬라이드 {formData.article_slides}개 + 광고 슬라이드 {formData.ad_slides}개 =
+              총 {formData.article_slides + formData.ad_slides}개 슬라이드
+              {formData.article_slides + formData.ad_slides > formData.total_slides && (
+                <span className="text-red-500 font-semibold ml-2">
+                  ⚠️ 전체 슬라이드 수({formData.total_slides})를 초과합니다!
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
+
+        {/* 기사 카테고리 선택 */}
+        <div className={`${cardClass} rounded-lg border p-6`}>
+          <h3 className={`text-lg font-semibold ${textClass} mb-4`}>슬라이드에 표시할 카테고리</h3>
+          <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mb-4`}>
+            선택한 카테고리의 최신 기사들이 슬라이드에 표시됩니다.
+          </p>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {categories.map(category => (
+              <label
+                key={category.id}
+                className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${
+                  formData.slide_categories.includes(category.slug)
+                    ? 'border-purple-600 bg-purple-50 dark:bg-purple-900/20'
+                    : isDarkMode
+                      ? 'border-gray-600 hover:border-gray-500'
+                      : 'border-gray-300 hover:border-gray-400'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={formData.slide_categories.includes(category.slug)}
+                  onChange={() => toggleCategory(category.slug)}
+                  className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                />
+                <span className={`text-sm font-medium ${textClass}`}>
+                  {category.name}
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* 자동 재생 설정 */}
+        <div className={`${cardClass} rounded-lg border p-6`}>
+          <h3 className={`text-lg font-semibold ${textClass} mb-4`}>자동 재생 설정</h3>
+
+          <div className="space-y-4">
+            <label className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={formData.autoplay_enabled}
+                onChange={(e) => setFormData({ ...formData, autoplay_enabled: e.target.checked })}
+                className="w-5 h-5 text-purple-600 rounded focus:ring-purple-500"
+              />
+              <span className={`text-sm font-medium ${textClass}`}>
+                슬라이드 자동 재생 활성화
+              </span>
+            </label>
+
+            {formData.autoplay_enabled && (
+              <div>
+                <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                  슬라이드 전환 간격 (밀리초)
+                </label>
+                <input
+                  type="number"
+                  min="1000"
+                  step="1000"
+                  value={formData.autoplay_interval}
+                  onChange={(e) => setFormData({ ...formData, autoplay_interval: parseInt(e.target.value) })}
+                  className={`w-full md:w-64 px-3 py-2 border rounded-lg ${inputClass}`}
+                />
+                <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
+                  현재: {formData.autoplay_interval / 1000}초마다 전환
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 저장 버튼 */}
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={() => settings && setFormData({
+              total_slides: settings.total_slides,
+              article_slides: settings.article_slides,
+              ad_slides: settings.ad_slides,
+              slide_categories: settings.slide_categories,
+              autoplay_enabled: settings.autoplay_enabled,
+              autoplay_interval: settings.autoplay_interval,
+            })}
+            className={`px-6 py-2 rounded-lg transition-colors ${
+              isDarkMode
+                ? 'bg-gray-700 hover:bg-gray-600 text-gray-200'
+                : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+            }`}
+          >
+            초기화
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={updateSettings.isPending || formData.article_slides + formData.ad_slides > formData.total_slides}
+            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {updateSettings.isPending ? '저장 중...' : '저장'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

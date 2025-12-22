@@ -1,19 +1,32 @@
 import React from 'react';
+import { useAdvertisementsByCategory } from '../../hooks/useAdvertisements';
+import AdBanner from '../AdBanner';
 
 interface FooterProps {
   isDarkMode: boolean;
   onNavigate?: (page: string) => void;
 }
 
-const Footer: React.FC<FooterProps> = ({ isDarkMode, onNavigate }) => (
-  <footer className={`py-16 ${isDarkMode ? 'bg-gray-900' : 'bg-white'} ${isDarkMode ? 'text-white' : 'text-black'} border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-      <div className="mb-8">
-        <h2 className={`text-3xl font-serif font-normal tracking-widest ${isDarkMode ? 'text-white' : 'text-black'}`}
-            style={{ fontFamily: 'Didot, "Bodoni MT", "Noto Serif Display", "URW Palladio L", P052, Sylfaen, serif' }}>
-          THIRD TWENTY
-        </h2>
-      </div>
+const Footer: React.FC<FooterProps> = ({ isDarkMode, onNavigate }) => {
+  // 하단 광고 가져오기 (카테고리 무관, sidebar 위치)
+  const { data: footerAd } = useAdvertisementsByCategory(null, 'sidebar');
+
+  return (
+    <footer className={`py-16 ${isDarkMode ? 'bg-gray-900' : 'bg-white'} ${isDarkMode ? 'text-white' : 'text-black'} border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        {/* 하단 광고 배너 */}
+        {footerAd && (
+          <div className="mb-12">
+            <AdBanner advertisement={footerAd} isDarkMode={isDarkMode} position="sidebar" />
+          </div>
+        )}
+
+        <div className="mb-8">
+          <h2 className={`text-3xl font-serif font-normal tracking-widest ${isDarkMode ? 'text-white' : 'text-black'}`}
+              style={{ fontFamily: 'Didot, "Bodoni MT", "Noto Serif Display", "URW Palladio L", P052, Sylfaen, serif' }}>
+            THIRD TWENTY
+          </h2>
+        </div>
       
       <div className="mb-8">
         <nav className="flex flex-wrap justify-center gap-4 sm:gap-8 text-sm">
@@ -58,6 +71,7 @@ const Footer: React.FC<FooterProps> = ({ isDarkMode, onNavigate }) => (
       </div>
     </div>
   </footer>
-);
+  );
+};
 
 export default Footer;
