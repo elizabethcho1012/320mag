@@ -50,8 +50,11 @@ const Footer: React.FC<FooterProps> = ({ isDarkMode, onNavigate }) => (
         </nav>
       </div>
 
-      <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-        WWW.320.KR IS OPERATED BY SENIOR LIFESTYLE MAGAZINE
+      <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} space-y-2`}>
+        <div>상호명: AGENE LIFESTYLE MAGAZINE</div>
+        <div>웹사이트: www.320.kr</div>
+        <div>이메일: 3rdtwenty@gmail.com</div>
+        <div>설립: 2024년</div>
       </div>
     </div>
   </footer>
