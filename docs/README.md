@@ -4,7 +4,7 @@
 
 **목적**: 해외 트렌드 기사를 수집하여 Ageless Generation(AGene, 에이진)을 위한 완전히 새로운 콘텐츠로 자동 재창작
 
-**최종 업데이트**: 2025-12-22 (기사 재점검 및 재분류 시스템 추가)
+**최종 업데이트**: 2025-12-22 (일일 수집 시스템 개선 + RSS 자동 복구 + 프로덕션 배포)
 
 ---
 
@@ -32,13 +32,14 @@
 
 | 항목 | 모델 | 비용 |
 |------|------|------|
-| 카테고리 추론 | GPT-4 Turbo | $0.006/기사 |
-| 콘텐츠 리라이팅 | Claude 3.5 Haiku | $0.015/기사 |
-| **합계** | **하이브리드** | **₩27/기사** |
+| 카테고리 추론 | Claude 3.5 Haiku | $0.013/기사 |
+| 콘텐츠 리라이팅 | Claude 3.5 Haiku | $0.105/기사 |
+| **합계** | **Haiku 단독** | **₩154/기사** |
 
-**월간 비용** (매일 3개 × 30일 = 90개):
-- **₩2,430/월**
-- GPT-4 단독 대비 82% 절감
+**일일 수집**: 8개 카테고리 × 1개씩 = 8개/일
+**월간 비용** (매일 8개 × 30일 = 240개):
+- **₩36,960/월**
+- 완전 자동화 시스템 (관리자 개입 불필요)
 
 ---
 
@@ -51,11 +52,11 @@
    - 이미지-콘텐츠 매칭 기준
    - AI 프롬프트 구현 상태
 
-2. **[HYBRID_IMPLEMENTATION.md](./HYBRID_IMPLEMENTATION.md)** - GPT-4 + Claude 3.5 Haiku 구현
-   - 설치 방법
-   - 비용 절감 효과
-   - 사용 방법
-   - 문제 해결
+2. **[RSS-AUTO-RECOVERY.md](./RSS-AUTO-RECOVERY.md)** - RSS 자동 복구 시스템 ⭐ NEW
+   - RSS 소스 자동 모니터링
+   - 죽은 소스 자동 비활성화
+   - AI 기반 새 소스 자동 검색 및 추가
+   - 완전 무인 운영 시스템
 
 3. **[HAIKU_COST_ANALYSIS.md](./HAIKU_COST_ANALYSIS.md)** - Haiku 비용 분석
    - Sonnet vs Haiku 비교
@@ -64,37 +65,45 @@
 ### 참고 문서
 4. **[IMAGE_MISMATCH_ANALYSIS.md](./IMAGE_MISMATCH_ANALYSIS.md)** - 이미지 매칭 문제 분석
 5. **[API_COMPARISON.md](./API_COMPARISON.md)** - OpenAI vs Anthropic 비교
-6. **[WEEKLY_ROTATION_PLAN.md](./WEEKLY_ROTATION_PLAN.md)** - 요일별 콘텐츠 순환 계획
+6. **[HYBRID_IMPLEMENTATION.md](./HYBRID_IMPLEMENTATION.md)** - GPT-4 + Claude 하이브리드 (구버전)
 
 ---
 
 ## 🚀 빠른 시작
 
 ### 1. API 키 설정
-`.env` 파일에 두 API 키 모두 필요:
+`.env` 파일에 Anthropic API 키 필요:
 ```bash
-# OpenAI (카테고리 추론)
-OPENAI_API_KEY=sk-proj-...
-VITE_OPENAI_API_KEY=sk-proj-...
-
-# Anthropic (콘텐츠 리라이팅)
+# Anthropic (카테고리 추론 + 콘텐츠 리라이팅)
 ANTHROPIC_API_KEY=sk-ant-api03-...
 VITE_ANTHROPIC_API_KEY=sk-ant-api03-...
+
+# Supabase (데이터베이스)
+VITE_SUPABASE_URL=https://...
+VITE_SUPABASE_ANON_KEY=eyJ...
 ```
 
-### 2. 테스트 실행
+### 2. RSS 건강 체크
 ```bash
-# 3개 카테고리 테스트 (패션, 뷰티, 운동)
-npx tsx scripts/test-three-categories.ts
+# RSS 소스 자동 복구 (죽은 소스 감지 및 새 소스 추가)
+npm run rss:health
 ```
 
 ### 3. 매일 자동 수집
 ```bash
-# 요일별 3개 자동 수집
+# 8개 카테고리 각 1개씩 자동 수집 (RSS 복구 포함)
 npm run collect:daily
 
 # Cron 설정 (매일 오전 9시)
-0 9 * * * npm run collect:daily
+0 9 * * * cd /path/to/320mag && npm run collect:daily
+```
+
+### 4. 프로덕션 배포
+```bash
+# Vercel에 자동 배포
+git add .
+git commit -m "Update content"
+git push origin main
 ```
 
 ---
@@ -102,9 +111,14 @@ npm run collect:daily
 ## 📊 워크플로우
 
 ```
-1. RSS 수집
+0. RSS 자동 복구 (매일 1회) 🔧 NEW
+   - 죽은 RSS 소스 자동 감지 및 비활성화
+   - AI가 새로운 RSS 소스 자동 검색
+   - 검증 후 자동으로 content-sources.ts 업데이트
    ↓
-2. 카테고리 추론 (GPT-4) ← $0.006
+1. RSS 수집 (8개 카테고리 × 활성 소스)
+   ↓
+2. 카테고리 추론 (Claude 3.5 Haiku) ← $0.013
    - 키워드 기반 빠른 추론
    - AI 기반 정확한 분류
    ↓
@@ -114,7 +128,7 @@ npm run collect:daily
    ↓
 4. 이미지 추출 (RSS/OG Image)
    ↓
-5. 콘텐츠 리라이팅 (Claude 3.5 Haiku) ← $0.015
+5. 콘텐츠 리라이팅 (Claude 3.5 Haiku) ← $0.105
    - 사실 정보 유지
    - 이미지 매칭 제약
    - 페르소나 적용
@@ -127,7 +141,9 @@ npm run collect:daily
 8. 목표 달성까지 반복 (3배 버퍼)
 ```
 
-**총 비용**: $0.021 (약 ₩27/기사)
+**총 비용**: $0.118 (약 ₩154/기사)
+**일일 8개 수집**: ₩1,232/일
+**월간 240개 수집**: ₩36,960/월
 
 ### 🔄 중복 이미지 처리 프로토콜 (2025-12-21 추가)
 
@@ -148,57 +164,72 @@ npm run collect:daily
 🎯 목표 달성! 4개 기사 수집 완료
 ```
 
-### 🔍 기사 재점검 및 재분류 시스템 (2025-12-22 추가)
+### 🔧 RSS 자동 복구 시스템 (2025-12-22 추가)
 
-정기적으로 기존 기사를 재점검하고 올바른 카테고리로 재분류합니다:
+RSS 소스가 죽으면 자동으로 감지하고 새로운 소스를 찾아서 추가하는 완전 자동화 시스템:
 
 **실행 방법**:
 ```bash
-npx tsx scripts/audit-and-reclassify.ts
+# 수동 실행
+npm run rss:health
+
+# 자동 실행 (매일 수집 시 자동으로 실행됨)
+npm run collect:daily
 ```
 
 **처리 과정**:
-1. **중복 기사 감지 및 삭제**
-   - 제목 중복 체크
-   - 이미지 중복 체크 (featured_image_url)
-   - 중복 발견 시 첫 번째만 유지, 나머지 삭제
+1. **RSS 건강 체크 (Step 1)**
+   - 모든 활성 RSS 소스 테스트 (최대 10개 기사 수집 시도)
+   - 404, 403, 405, 타임아웃 등 에러 감지
+   - 건강한 소스 vs 죽은 소스 분류
 
-2. **카테고리 재검증**
-   - Claude 3.5 Haiku로 모든 기사 분석
-   - 키워드 추천 vs AI 분석 비교
-   - AI가 콘텐츠 핵심 주제 파악하여 최종 결정
+2. **죽은 소스 자동 비활성화 (Step 1-A)**
+   - `content-sources.ts` 파일 자동 수정
+   - `isActive: false` 설정
+   - 에러 코드와 날짜 코멘트 자동 추가
+   - 예: `isActive: false, // 2025-12-22: 404 에러로 자동 비활성화`
 
-3. **재분류 실행**
-   - 잘못된 카테고리 자동 수정
-   - 업데이트 시간 기록
-   - 상세한 로그 출력
+3. **새 소스 AI 검색 (Step 2)**
+   - 소스가 3개 미만인 카테고리 감지
+   - Claude AI가 해당 카테고리의 새로운 RSS 소스 검색
+   - 검증 가능한 유명 사이트 위주 추천
+
+4. **새 소스 자동 검증 및 추가 (Step 2-A)**
+   - 추천된 RSS URL 실제 작동 테스트
+   - 작동하는 소스만 `content-sources.ts`에 자동 추가
+   - Git commit 없이 파일만 수정 (다음 배포 시 자동 반영)
 
 **실행 결과 (2025-12-22 첫 실행)**:
 ```
-📊 총 54개 기사 검증
-   - 중복 기사: 0개
-   - 재분류: 13개 (24%)
-   - 유지: 41개 (76%)
+📊 RSS 건강 체크 결과:
+   - 전체 소스: 41개
+   - 건강: 33개 (80.5%)
+   - 죽음: 8개 (19.5%)
 
-📈 최종 카테고리 분포:
-   섹슈얼리티: 13개
-   푸드: 12개
-   하우징: 7개
-   여행: 6개
-   뷰티: 5개
-   라이프스타일: 4개
-   패션: 4개
-   심리: 3개
-   운동: 0개 ⚠️
+⚠️  죽은 소스 8개 자동 비활성화:
+   - Into The Gloss (404)
+   - Byrdie (404)
+   - Refinery29 Beauty (404)
+   - Budget Travel (403)
+   - Lonely Planet (ERROR)
+   - Serious Eats (404)
+   - Saveur (ERROR)
+   - Psychology Today (404)
+
+🔍 카테고리별 소스 현황:
+   뷰티: 2개 (1개 부족) ⚠️
+   여행: 1개 (2개 부족) ⚠️
+   푸드: 2개 (1개 부족) ⚠️
+   섹슈얼리티: 2개 (1개 부족) ⚠️
 ```
 
-**주요 재분류 사례**:
-- "아몬드 향..." → 패션에서 뷰티로 (향수)
-- "색채의 동네..." → 패션에서 하우징으로 (건축/공간)
-- "전쟁의 기억..." → 패션에서 여행으로 (여행지)
-- "충동구매..." → 섹슈얼리티에서 심리로 (소비 심리)
+**장점**:
+- ✅ 관리자 개입 없이 완전 자동 운영
+- ✅ RSS 죽어도 시스템이 알아서 복구
+- ✅ 매일 수집 전 자동 실행으로 안정성 보장
+- ✅ 소스 코드 파일 자동 업데이트
 
-**권장 주기**: 월 1회 또는 새 기사 대량 추가 후
+**권장 주기**: 매일 자동 실행 (daily-rotation.ts에 내장)
 
 ---
 
@@ -228,11 +259,21 @@ npx tsx scripts/audit-and-reclassify.ts
 
 ## 🔧 구현 파일
 
-- `src/services/aiRewriteService.ts` - Claude 3.5 Haiku 리라이팅
-- `src/services/categoryInference.ts` - GPT-4 카테고리 추론
-- `src/services/contentPipeline.ts` - 전체 파이프라인
-- `scripts/daily-rotation.ts` - 매일 자동 수집
-- `scripts/test-three-categories.ts` - 테스트 스크립트
+### 핵심 서비스
+- `src/services/categoryInference.ts` - Claude 3.5 Haiku 카테고리 추론 + 리라이팅
+- `src/services/contentPipeline.ts` - 전체 파이프라인 (8개 카테고리 일일 수집)
+- `src/services/rssHealthMonitor.ts` - RSS 소스 건강 모니터링
+- `src/services/webScraper.ts` - 웹 스크래핑 백업 시스템
+
+### 자동화 스크립트
+- `scripts/daily-rotation.ts` - 매일 자동 수집 (RSS 복구 포함)
+- `scripts/auto-rss-recovery.ts` - RSS 자동 복구 시스템
+- `scripts/check-articles.ts` - 기사 개수 확인
+- `scripts/fill-specific-categories.ts` - 특정 카테고리 채우기
+
+### 데이터 소스
+- `src/data/content-sources.ts` - RSS 소스 목록 (자동 업데이트됨)
+- `src/data/categories.ts` - 8개 카테고리 정의
 
 ---
 
@@ -241,15 +282,52 @@ npx tsx scripts/audit-and-reclassify.ts
 ### Anthropic API 인증 오류
 1. API 키 확인: https://console.anthropic.com/settings/keys
 2. 크레딧 잔액 확인: https://console.anthropic.com/settings/billing
-3. Sonnet 접근 불가 → Haiku 사용 (현재 구현)
+3. 환경 변수 확인: `VITE_ANTHROPIC_API_KEY` 설정 필수
+
+### RSS 소스 문제
+- 죽은 RSS는 자동으로 비활성화됨 (`rss:health` 자동 실행)
+- 새 소스는 AI가 자동으로 찾아서 추가
+- 수동 확인: `npm run rss:health`
 
 ### 이미지-내용 불일치
 - 원본 주제가 유지되는지 확인
 - AI 프롬프트 제약 확인
 - 필요시 이미지 제거 (null)
 
+### Vercel 배포 문제
+- 환경 변수 설정: Settings → Environment Variables
+- 필수 변수: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_ANTHROPIC_API_KEY`
+- 재배포: `git push origin main` (자동 배포 트리거)
+
+---
+
+## 📈 현재 상태 (2025-12-22)
+
+**배포**: ✅ Vercel 프로덕션 (https://vercel.com/elizabethchos-projects/320mag)
+**기사**: 106개 (8개 카테고리)
+**시스템**: 완전 자동화 (관리자 개입 불필요)
+**비용**: ₩36,960/월 (240개 기사)
+
+### 카테고리별 기사 현황
+- 하우징: 17개 ✅
+- 섹슈얼리티: 13개 ✅
+- 여행: 13개 ✅
+- 푸드: 13개 ✅
+- 패션: 13개 ✅
+- 심리: 13개 ✅
+- 뷰티: 12개 (1개 부족)
+- 운동: 12개 (1개 부족)
+
+### 다음 단계
+1. ✅ RSS 자동 복구 시스템 완료
+2. ✅ 일일 8개 카테고리 수집 완료
+3. ✅ Vercel 프로덕션 배포 완료
+4. 🔄 매일 자동 수집 실행 중 (Cron 설정 권장)
+5. 📊 월 1회 기사 품질 모니터링 권장
+
 ---
 
 **개발**: Claude Code
-**상태**: ✅ 프로덕션 준비 완료
-**비용**: ₩2,430/월 (90개 기사)
+**최종 업데이트**: 2025-12-22
+**상태**: ✅ 프로덕션 운영 중
+**자동화 레벨**: 100% (무인 운영)

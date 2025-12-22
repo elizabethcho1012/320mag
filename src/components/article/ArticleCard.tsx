@@ -31,7 +31,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onArticleClick, isDa
       <img
         src={article.image}
         alt={article.title}
-        className="w-full h-48 object-cover mb-3 group-hover:opacity-90 transition-opacity rounded-lg"
+        className="w-full h-48 object-contain mb-3 group-hover:opacity-90 transition-opacity rounded-lg bg-gray-100"
       />
       <span className="text-xs text-purple-600 uppercase tracking-wide font-medium mb-1 block">
         {article.subcategory}
