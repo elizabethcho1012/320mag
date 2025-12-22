@@ -4,7 +4,7 @@
 
 **목적**: 해외 트렌드 기사를 수집하여 Ageless Generation(AGene, 에이진)을 위한 완전히 새로운 콘텐츠로 자동 재창작
 
-**최종 업데이트**: 2025-12-22 (일일 수집 시스템 개선 + RSS 자동 복구 + 프로덕션 배포)
+**최종 업데이트**: 2025-12-22 (UI/UX 개선 + Chrome 브라우저 이슈 해결 + 프로덕션 배포)
 
 ---
 
@@ -299,14 +299,73 @@ npm run collect:daily
 - 필수 변수: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_ANTHROPIC_API_KEY`
 - 재배포: `git push origin main` (자동 배포 트리거)
 
+### Chrome 브라우저 로딩 문제 (2025-12-22 해결)
+**증상**: 특정 Chrome 프로필에서 무한 로딩 또는 느린 로딩
+
+**해결 방법**:
+1. **캐시 클리어 (가장 빠름)**
+   ```
+   https://320.kr?clearCache=true
+   ```
+   - React Query 캐시, localStorage, sessionStorage 자동 클리어
+   - 정상 URL로 자동 리다이렉트
+
+2. **Chrome 개발자 도구**
+   - F12 → Application → Storage → "Clear site data"
+   - Ctrl+Shift+R (하드 리프레시)
+
+3. **Chrome 설정**
+   ```
+   chrome://settings/content/all
+   → 검색: 320.kr → 데이터 삭제
+   ```
+
+**기술적 해결**:
+- Auth 초기화 5초 타임아웃 추가 ([AuthContext.tsx](../src/contexts/AuthContext.tsx))
+- Supabase 쿼리 20초 타임아웃 추가 ([useArticles.ts](../src/hooks/useArticles.ts))
+- React Query `refetchOnMount`, `refetchOnReconnect` 활성화
+- URL 파라미터 캐시 클리어 기능 추가 ([App.tsx](../src/App.tsx))
+
 ---
 
 ## 📈 현재 상태 (2025-12-22)
 
-**배포**: ✅ Vercel 프로덕션 (https://vercel.com/elizabethchos-projects/320mag)
+**배포**: ✅ Vercel 프로덕션 (https://320.kr)
 **기사**: 106개 (8개 카테고리)
 **시스템**: 완전 자동화 (관리자 개입 불필요)
 **비용**: ₩36,960/월 (240개 기사)
+
+### 최근 업데이트 (2025-12-22)
+
+#### UI/UX 개선
+- ✅ **Footer 정보 업데이트**: AGENE LIFESTYLE MAGAZINE으로 브랜드명 변경
+- ✅ **모바일 네비게이션**: 가로 스크롤 지원 (스크롤바 숨김)
+- ✅ **터치 제스처**: 히어로 슬라이더 스와이프 지원 (50px 임계값)
+- ✅ **한글 타이포그래피**: `break-keep` 적용으로 단어 중간 줄바꿈 방지
+  - 예: "스타일링" → "스타/일링" ❌ → "스타일링" ✅
+
+#### 브라우저 호환성
+- ✅ **Chrome 무한 로딩 해결**:
+  - Auth 초기화 타임아웃 (5초)
+  - Supabase 쿼리 타임아웃 (20초)
+  - 캐시 클리어 URL 파라미터 (`?clearCache=true`)
+- ✅ **Supabase 클라이언트 최적화**:
+  - 헤더 설정 추가
+  - DB 스키마 명시
+  - Realtime 설정 최적화
+
+#### 파일 변경 내역
+- `src/components/layout/Footer.tsx` - 회사 정보 업데이트
+- `src/components/layout/Header.tsx` - 모바일 네비게이션 스크롤
+- `src/index.css` - `scrollbar-hide` 유틸리티 추가
+- `src/pages/HomePage.tsx` - 터치 스와이프 + `break-keep`
+- `src/components/article/ArticleCard.tsx` - `break-keep` 적용
+- `src/pages/CategoryPage.tsx` - `break-keep` 적용
+- `src/pages/SearchResultsPage.tsx` - `break-keep` 적용
+- `src/contexts/AuthContext.tsx` - 타임아웃 + `isMounted` 플래그
+- `src/hooks/useArticles.ts` - 20초 타임아웃 + 에러 처리
+- `src/integrations/supabase/client.ts` - 클라이언트 설정 개선
+- `src/App.tsx` - 캐시 클리어 기능 추가
 
 ### 카테고리별 기사 현황
 - 하우징: 17개 ✅
@@ -322,8 +381,10 @@ npm run collect:daily
 1. ✅ RSS 자동 복구 시스템 완료
 2. ✅ 일일 8개 카테고리 수집 완료
 3. ✅ Vercel 프로덕션 배포 완료
-4. 🔄 매일 자동 수집 실행 중 (Cron 설정 권장)
-5. 📊 월 1회 기사 품질 모니터링 권장
+4. ✅ UI/UX 모바일 최적화 완료
+5. ✅ Chrome 브라우저 이슈 해결 완료
+6. 🔄 매일 자동 수집 실행 중 (Cron 설정 권장)
+7. 📊 월 1회 기사 품질 모니터링 권장
 
 ---
 
