@@ -36,7 +36,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onArticleClick, isDa
       <span className="text-xs text-purple-600 uppercase tracking-wide font-medium mb-1 block">
         {article.subcategory}
       </span>
-      <h3 className={`text-sm font-bold leading-tight group-hover:text-purple-600 transition-colors ${textClass} mb-2`}>
+      <h3 className={`text-sm font-bold leading-tight group-hover:text-purple-600 transition-colors ${textClass} mb-2 break-keep`}>
         {article.title}
       </h3>
 

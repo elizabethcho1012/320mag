@@ -138,10 +138,10 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
                 <span className="text-xs text-purple-600 uppercase tracking-wide font-medium mb-1 block">
                   {article.subcategories?.name || article.categories?.name || 'ARTICLE'}
                 </span>
-                <h3 className={`text-lg font-bold leading-tight group-hover:text-purple-600 transition-colors ${textClass} mb-2`}>
+                <h3 className={`text-lg font-bold leading-tight group-hover:text-purple-600 transition-colors ${textClass} mb-2 break-keep`}>
                   {article.title}
                 </h3>
-                <p className={`text-sm ${subtextClass} line-clamp-2 mb-2`}>
+                <p className={`text-sm ${subtextClass} line-clamp-2 mb-2 break-keep`}>
                   {article.excerpt}
                 </p>
                 <div className={`flex items-center text-xs ${subtextClass} space-x-3`}>

@@ -310,10 +310,10 @@ const HeroSlideLocal: React.FC<{
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-8 pb-16 text-white">
                 <div className="max-w-4xl text-center mx-auto">
-                  <h2 className="text-2xl md:text-3xl font-bold mb-2 leading-tight">
+                  <h2 className="text-2xl md:text-3xl font-bold mb-2 leading-tight break-keep">
                     {article.title}
                   </h2>
-                  <p className="text-sm md:text-base text-gray-200 leading-relaxed">
+                  <p className="text-sm md:text-base text-gray-200 leading-relaxed break-keep">
                     {article.excerpt}
                   </p>
                 </div>
@@ -376,7 +376,7 @@ const ContentSectionLocal: React.FC<{
             <span className="text-xs text-purple-600 uppercase tracking-wide font-medium mb-1 block">
               {article.subcategory || 'ARTICLE'}
             </span>
-            <h3 className={`text-sm font-bold leading-tight group-hover:text-purple-600 transition-colors ${textClass}`}>
+            <h3 className={`text-sm font-bold leading-tight group-hover:text-purple-600 transition-colors ${textClass} break-keep`}>
               {article.title}
             </h3>
           </div>

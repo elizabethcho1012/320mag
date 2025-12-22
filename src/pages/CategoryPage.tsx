@@ -186,10 +186,10 @@ const CategoryPage: React.FC<CategoryPageProps> = ({
                   <span className="text-xs text-purple-600 uppercase tracking-wide font-medium mb-2 block">
                     {article.subcategories?.name || 'ARTICLE'}
                   </span>
-                  <h3 className={`text-lg font-bold leading-tight mb-2 group-hover:text-purple-600 transition-colors ${textClass}`}>
+                  <h3 className={`text-lg font-bold leading-tight mb-2 group-hover:text-purple-600 transition-colors ${textClass} break-keep`}>
                     {article.title}
                   </h3>
-                  <p className={`text-sm ${subtextClass} line-clamp-2`}>
+                  <p className={`text-sm ${subtextClass} line-clamp-2 break-keep`}>
                     {article.excerpt}
                   </p>
                   <div className={`flex items-center mt-2 text-xs ${subtextClass}`}>
