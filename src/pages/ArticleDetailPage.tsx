@@ -231,7 +231,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({ articleId, onBack
           <img
             src={article.featured_image_url || 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=800&h=600&fit=crop'}
             alt={article.title}
-            className="w-full h-64 md:h-96 object-contain rounded-lg bg-gray-100"
+            className="w-full h-auto object-cover rounded-lg"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.src = 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=800&h=600&fit=crop';
