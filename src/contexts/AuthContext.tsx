@@ -58,11 +58,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) {
         // 프로필이 없으면 기본 프로필 생성
         if (error.code === 'PGRST116') {
+          console.log('프로필이 존재하지 않습니다. userId:', userId);
           return null;
         }
         console.error('프로필 조회 오류:', error);
         return null;
       }
+
+      console.log('프로필 조회 성공:', {
+        id: data.id,
+        email: data.email,
+        username: data.username,
+        role: data.role,
+      });
 
       return {
         id: data.id,
@@ -199,10 +207,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // 인증 상태 변화 감지
   useEffect(() => {
+    let isMounted = true;
+
     // 초기 세션 확인
     const initializeAuth = async () => {
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
+
+        if (!isMounted) return;
 
         if (currentSession?.user) {
           setSession(currentSession);
@@ -222,6 +234,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             );
           }
 
+          if (!isMounted) return;
           setProfile(userProfile);
         } else {
           // 로그인하지 않은 상태
@@ -232,9 +245,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (error) {
         console.error('인증 초기화 오류:', error);
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
+
+    // 무한 로딩 방지용 타임아웃 (5초 후 강제로 loading 해제)
+    const timeoutId = setTimeout(() => {
+      if (isMounted) {
+        console.warn('Auth initialization timeout - forcing loading to false');
+        setLoading(false);
+      }
+    }, 5000);
 
     initializeAuth();
 
@@ -243,24 +266,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       async (event, currentSession) => {
         console.log('Auth state changed:', event);
 
+        if (!isMounted) return;
+
         if (currentSession?.user) {
           setSession(currentSession);
           setUser(currentSession.user);
 
           // 프로필 조회
           const userProfile = await fetchProfile(currentSession.user.id);
-          setProfile(userProfile);
+          if (isMounted) {
+            setProfile(userProfile);
+          }
         } else {
           setSession(null);
           setUser(null);
           setProfile(null);
         }
 
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     );
 
     return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
   }, []);
