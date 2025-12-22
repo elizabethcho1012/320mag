@@ -319,7 +319,7 @@ const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* 네비게이션 */}
-          <div className={`border-t py-4 ${isDarkMode ? 'border-gray-700' : highContrast ? 'border-black' : 'border-gray-100'} overflow-x-auto`}>
+          <div className={`border-t py-4 ${isDarkMode ? 'border-gray-700' : highContrast ? 'border-black' : 'border-gray-100'} overflow-x-auto scrollbar-hide`}>
             <nav className="flex justify-start md:justify-center space-x-6 md:space-x-12 px-4 md:px-0 min-w-max md:min-w-0">
               {mainNavigation.map((item) => (
                 <button
