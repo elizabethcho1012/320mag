@@ -30,17 +30,26 @@ const HomePage: React.FC<HomePageProps> = ({ onArticleClick, isDarkMode, highCon
       ? 'bg-white'
       : 'bg-gray-50';
 
-  // 로딩 상태
-  if (articlesLoading || featuredLoading) {
+  // 로딩 타임아웃 체크
+  const [showContent, setShowContent] = useState(false);
+
+  useEffect(() => {
+    // 2초 후에는 무조건 콘텐츠 표시
+    const timer = setTimeout(() => {
+      setShowContent(true);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // 로딩 상태 - 2초 안에만 표시
+  if ((articlesLoading || featuredLoading) && !showContent) {
     return (
       <div className={`${bgClass} transition-colors duration-300 min-h-screen flex items-center justify-center`}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
           <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
             콘텐츠를 불러오고 있습니다...
-          </p>
-          <p className={`text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-400'} mt-2`}>
-            {articlesLoading && '기사 로딩 중...'} {featuredLoading && 'Featured 로딩 중...'}
           </p>
         </div>
       </div>
