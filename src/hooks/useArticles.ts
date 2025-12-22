@@ -53,9 +53,9 @@ export const usePublishedArticles = () => {
     queryKey: ['articles', 'published'],
     queryFn: async () => {
       try {
-        // 10초 타임아웃 설정
+        // 20초 타임아웃 설정 (Supabase 응답 느릴 수 있음)
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Request timeout')), 10000)
+          setTimeout(() => reject(new Error('Request timeout')), 20000)
         );
 
         const queryPromise = supabase
@@ -136,9 +136,9 @@ export const useFeaturedArticles = () => {
     queryKey: ['articles', 'featured'],
     queryFn: async () => {
       try {
-        // 10초 타임아웃 설정
+        // 20초 타임아웃 설정 (Supabase 응답 느릴 수 있음)
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Request timeout')), 10000)
+          setTimeout(() => reject(new Error('Request timeout')), 20000)
         );
 
         const queryPromise = supabase
@@ -372,9 +372,9 @@ export const useCreators = () => {
     queryKey: ['creators'],
     queryFn: async () => {
       try {
-        // 10초 타임아웃 설정
+        // 20초 타임아웃 설정 (Supabase 응답 느릴 수 있음)
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Request timeout')), 10000)
+          setTimeout(() => reject(new Error('Request timeout')), 20000)
         );
 
         const queryPromise = supabase

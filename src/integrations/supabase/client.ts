@@ -13,5 +13,18 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: typeof window !== 'undefined' ? localStorage : undefined,
     persistSession: typeof window !== 'undefined',
     autoRefreshToken: typeof window !== 'undefined',
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'supabase-js-web',
+    },
+  },
+  db: {
+    schema: 'public',
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
   }
 });
