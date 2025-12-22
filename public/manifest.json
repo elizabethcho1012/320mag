@@ -1,0 +1,38 @@
+{
+  "name": "THIRD TWENTY - 320 Magazine",
+  "short_name": "320",
+  "description": "40-50대를 위한 프리미엄 라이프스타일 매거진",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#9333ea",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["lifestyle", "magazine", "news"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "홈",
+      "url": "/",
+      "description": "홈 페이지로 이동"
+    },
+    {
+      "name": "데일리 뉴스",
+      "url": "/?page=daily-news",
+      "description": "오늘의 뉴스 보기"
+    }
+  ]
+}

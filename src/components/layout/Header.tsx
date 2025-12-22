@@ -41,12 +41,15 @@ const Header: React.FC<HeaderProps> = ({
   const { profile, signIn, signUp, signOut, isAdmin, loading } = useAuth();
 
   const mainNavigation = [
-    { id: 'fashion', label: 'FASHION' },
     { id: 'beauty', label: 'BEAUTY' },
+    { id: 'fashion', label: 'FASHION' },
+    { id: 'food', label: 'FOOD' },
+    { id: 'fitness', label: 'FITNESS' },
     { id: 'travel', label: 'TRAVEL' },
     { id: 'lifestyle', label: 'LIFESTYLE' },
     { id: 'housing', label: 'HOUSING' },
-    { id: 'global-trends', label: 'TRENDS' }
+    { id: 'mind', label: 'MIND' },
+    { id: 'sexuality', label: 'SEXUALITY' }
   ];
 
   const handleLogin = async () => {

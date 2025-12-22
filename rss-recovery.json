@@ -1,0 +1,40 @@
+[
+  {
+    "originalSourceId": "beauty-into-the-gloss",
+    "alternativeSourceId": "beauty-byrdie",
+    "success": false,
+    "articlesCollected": 0,
+    "error": "Status code 404",
+    "timestamp": "2025-12-20T14:45:49.034Z"
+  },
+  {
+    "originalSourceId": "beauty-into-the-gloss",
+    "alternativeSourceId": "beauty-coveteur",
+    "success": true,
+    "articlesCollected": 5,
+    "timestamp": "2025-12-20T14:45:49.581Z"
+  },
+  {
+    "originalSourceId": "global-food-serious-eats",
+    "alternativeSourceId": "food-foodwine",
+    "success": false,
+    "articlesCollected": 0,
+    "error": "Status code 404",
+    "timestamp": "2025-12-20T14:45:50.096Z"
+  },
+  {
+    "originalSourceId": "global-food-serious-eats",
+    "alternativeSourceId": "food-epicurious",
+    "success": false,
+    "articlesCollected": 0,
+    "error": "Status code 404",
+    "timestamp": "2025-12-20T14:45:50.453Z"
+  },
+  {
+    "originalSourceId": "global-food-serious-eats",
+    "alternativeSourceId": "food-tasting-table",
+    "success": true,
+    "articlesCollected": 5,
+    "timestamp": "2025-12-20T14:45:51.016Z"
+  }
+]

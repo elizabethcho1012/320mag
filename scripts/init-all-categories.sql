@@ -6,19 +6,17 @@
 -- 1. 기존 데이터 정리
 TRUNCATE categories CASCADE;
 
--- 2. 메인 카테고리 11개 삽입 (RSS 소스가 있는 카테고리만)
+-- 2. 메인 카테고리 9개 삽입
 INSERT INTO categories (name, slug, description, order_index) VALUES
-  ('패션', 'fashion', '트렌디하고 실용적인 패션 가이드', 1),
-  ('뷰티', 'beauty', '안티에이징과 뷰티 트렌드', 2),
-  ('여행', 'travel', '40~50대를 위한 프리미엄 여행', 3),
-  ('라이프스타일', 'lifestyle', '풍요로운 중년의 라이프스타일', 4),
-  ('글로벌푸드', 'global-food', '세계 각국의 음식 문화와 트렌드', 5),
-  ('건강푸드', 'health-food', '건강을 위한 영양과 식단 정보', 6),
+  ('뷰티', 'beauty', '안티에이징과 뷰티 트렌드', 1),
+  ('패션', 'fashion', '트렌디하고 실용적인 패션 가이드', 2),
+  ('푸드', 'food', '미식과 건강을 위한 음식 이야기', 3),
+  ('운동', 'fitness', '피트니스, 운동, 건강 관리', 4),
+  ('여행', 'travel', '40~50대를 위한 프리미엄 여행', 5),
+  ('라이프스타일', 'lifestyle', '풍요로운 중년의 라이프스타일', 6),
   ('하우징', 'housing', '집과 공간을 아름답게 꾸미는 방법', 7),
-  ('글로벌트렌드', 'global-trends', '세계적인 사회, 경제, 기술 트렌드', 8),
-  ('심리', 'psychology', '마음의 건강과 심리학 인사이트', 9),
-  ('섹슈얼리티', 'sexuality', '성과 관계에 대한 건강한 이해', 10),
-  ('운동', 'exercise', '건강한 신체를 위한 운동과 피트니스', 11);
+  ('심리', 'mind', '마음의 건강과 심리학 인사이트', 8),
+  ('섹슈얼리티', 'sexuality', '친밀감, 관계, 성 건강', 9);
 
 -- 3. 서브카테고리 삽입
 
@@ -110,12 +108,12 @@ INSERT INTO subcategories (name, slug, category_id, order_index) VALUES
 
 -- 운동 서브카테고리 (6개)
 INSERT INTO subcategories (name, slug, category_id, order_index) VALUES
-  ('ALL', 'exercise-all', (SELECT id FROM categories WHERE slug = 'exercise'), 1),
-  ('STRENGTH', 'exercise-strength', (SELECT id FROM categories WHERE slug = 'exercise'), 2),
-  ('CARDIO', 'exercise-cardio', (SELECT id FROM categories WHERE slug = 'exercise'), 3),
-  ('FLEXIBILITY', 'exercise-flexibility', (SELECT id FROM categories WHERE slug = 'exercise'), 4),
-  ('INJURY PREVENTION', 'exercise-injury-prevention', (SELECT id FROM categories WHERE slug = 'exercise'), 5),
-  ('EXERCISE SCIENCE', 'exercise-science', (SELECT id FROM categories WHERE slug = 'exercise'), 6);
+  ('ALL', 'fitness-all', (SELECT id FROM categories WHERE slug = 'fitness'), 1),
+  ('STRENGTH', 'fitness-strength', (SELECT id FROM categories WHERE slug = 'fitness'), 2),
+  ('CARDIO', 'fitness-cardio', (SELECT id FROM categories WHERE slug = 'fitness'), 3),
+  ('FLEXIBILITY', 'fitness-flexibility', (SELECT id FROM categories WHERE slug = 'fitness'), 4),
+  ('INJURY PREVENTION', 'fitness-injury-prevention', (SELECT id FROM categories WHERE slug = 'fitness'), 5),
+  ('EXERCISE SCIENCE', 'fitness-science', (SELECT id FROM categories WHERE slug = 'fitness'), 6);
 
 -- 4. 결과 확인
 SELECT

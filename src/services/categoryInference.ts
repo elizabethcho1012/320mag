@@ -6,21 +6,17 @@ const OPENAI_API_KEY = typeof import.meta !== 'undefined' && import.meta.env
 
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 
-// 지원하는 카테고리 목록
+// 지원하는 카테고리 목록 (NEW SEXY - 9개 카테고리)
 const VALID_CATEGORIES = [
   '패션',
   '뷰티',
-  '컬처',
   '여행',
-  '시니어시장',
-  '글로벌트렌드',
   '푸드',
+  '심리',
+  '건강',
+  '라이프스타일',
   '하우징',
   '섹슈얼리티',
-  '심리',
-  '운동',
-  '의료',
-  '라이프스타일',
 ];
 
 /**
@@ -42,7 +38,7 @@ export async function inferCategory(
   // AI 기반 정확한 추론
   try {
     const rawKey = apiKey || OPENAI_API_KEY;
-    const cleanKey = rawKey?.trim().replace(/^["']|["']$/g, '');
+    const cleanKey = typeof rawKey === 'string' ? rawKey.trim().replace(/^["']|["']$/g, '') : '';
 
     if (!cleanKey || cleanKey === 'your-openai-api-key-here') {
       console.warn('⚠️  OpenAI API 키 없음, 기본 카테고리 사용:', defaultCategory);
@@ -54,20 +50,16 @@ export async function inferCategory(
 제목: ${title}
 내용: ${content.substring(0, 500)}
 
-카테고리 옵션:
-- 패션: 의류, 스타일, 패션 브랜드, 디자이너
-- 뷰티: 화장품, 스킨케어, 뷰티 트렌드
-- 컬처: 예술, 문화, 전시, 공연, 책
-- 여행: 여행지, 호텔, 관광
-- 시니어시장: 시니어 비즈니스, 고령화 사회
-- 글로벌트렌드: 경제, 기술, 사회 트렌드
-- 푸드: 음식, 레스토랑, 요리, 맛집
-- 하우징: 건축, 인테리어, 주거 공간
-- 섹슈얼리티: 친밀감, 관계, 성 건강
-- 심리: 심리학, 정신 건강
-- 운동: 피트니스, 스포츠, 건강 운동
-- 의료: 의학, 건강, 질병, 치료
-- 라이프스타일: 위 카테고리에 해당하지 않는 일반적인 생활 주제
+카테고리 옵션 (NEW SEXY - 40~50대 중장년을 위한 9개 카테고리):
+- 패션: 의류, 스타일, 패션 브랜드, 디자이너, 액세서리
+- 뷰티: 화장품, 스킨케어, 뷰티 트렌드, 안티에이징
+- 여행: 여행지, 호텔, 관광, 문화 체험
+- 푸드: 음식, 레스토랑, 미식, 영양, 식단, 건강 식품
+- 심리: 심리학, 정신 건강, 마음챙김, 자기계발
+- 건강: 피트니스, 운동, 스포츠, 건강 관리
+- 라이프스타일: 일상, 문화, 엔터테인먼트, 예술, 전시, 공연
+- 하우징: 건축, 인테리어, 주거 공간, 리모델링
+- 섹슈얼리티: 친밀감, 관계, 성 건강, 상담
 
 응답 형식: 카테고리 이름만 정확히 출력하세요 (예: 패션, 뷰티, 푸드 등)`;
 
@@ -117,20 +109,27 @@ export async function inferCategory(
 
 /**
  * 키워드 기반 빠른 카테고리 추론 (AI 호출 없이)
+ * NEW SEXY 9개 카테고리만 지원
  */
 function quickInferCategory(title: string, content: string): string | null {
   const text = `${title} ${content}`.toLowerCase();
 
-  // 명확한 키워드 매칭
+  // 명확한 키워드 매칭 (NEW SEXY - 9개 카테고리)
+  // ⚠️ 중요: 순서가 중요! 더 구체적인 카테고리를 먼저 체크해야 함
+  // 섹슈얼리티를 심리보다, 운동을 푸드보다 먼저 체크
   const rules: Record<string, string[]> = {
-    뷰티: ['beauty', 'skincare', '뷰티', '화장품', '스킨케어', 'cosmetic', 'makeup'],
-    푸드: ['restaurant', 'food', 'chef', 'dining', '레스토랑', '음식', '맛집', 'cuisine', 'michelin'],
-    패션: ['fashion', 'designer', 'runway', 'collection', '패션', '디자이너', 'vogue', 'style'],
-    하우징: ['architecture', 'interior', 'house', 'design', '건축', '인테리어', 'home'],
-    컬처: ['art', 'culture', 'exhibition', 'museum', 'theater', '예술', '문화', '전시', '공연'],
-    의료: ['health', 'medical', 'doctor', 'hospital', '의료', '건강', 'medicine', 'clinic'],
-    여행: ['travel', 'hotel', 'tourism', '여행', '호텔', 'destination'],
-    글로벌트렌드: ['economic', 'technology', 'trend', 'global', 'business', '경제', '기술'],
+    패션: ['fashion', 'designer', 'runway', 'collection', '패션', '디자이너', 'vogue', 'style', 'jewelry', 'watch'],
+    뷰티: ['beauty', 'skincare', '뷰티', '화장품', '스킨케어', 'cosmetic', 'makeup', 'anti-aging'],
+    여행: ['travel', 'hotel', 'tourism', '여행', '호텔', 'destination', 'vacation', 'island', 'monument', 'landmark', 'memorial'],
+    하우징: ['architecture', 'interior', 'house', 'home design', 'home interior', '건축', '인테리어', 'remodeling', 'renovation'],
+    // 🔥 섹슈얼리티를 먼저 체크 (심리보다 구체적)
+    섹슈얼리티: ['sexuality', 'intimacy', 'relationship', '섹슈얼리티', '친밀감', '관계', 'sex', 'sexual health', 'dating', 'romance'],
+    // 🔥 운동을 먼저 체크 (푸드보다 구체적) - fitness 키워드 우선
+    운동: ['fitness', 'exercise', 'workout', '운동', '피트니스', 'yoga', 'strength', 'cardio', 'training', 'gym', 'bodybuilding', 'pilates', 'stretching'],
+    // 이제 더 넓은 카테고리들
+    심리: ['psychology', 'mental health', 'mindfulness', '심리', '정신건강', 'meditation', '명상', 'therapy', 'counseling', 'well-being'],
+    푸드: ['food', 'restaurant', 'chef', 'dining', '음식', '레스토랑', '미식', 'cuisine', 'michelin', 'wine', 'spirits', 'nutrition', 'diet', 'superfood', '영양', '식단', 'healthy eating', 'meal planning', 'vitamin', 'recipe'],
+    라이프스타일: ['art', 'culture', 'exhibition', 'museum', 'theater', '예술', '문화', '전시', '공연', 'lifestyle', 'entertainment', 'hobby'],
   };
 
   for (const [category, keywords] of Object.entries(rules)) {

@@ -7,6 +7,8 @@ import { getCreatorUUID } from './editorMapping';
 import { extractImageFromRSS, extractAllImagesFromRSS, getSmartUnsplashUrl, isValidImageUrl, fetchOgImage } from './imageService';
 import { inferCategory } from './categoryInference';
 import { findWorkingFallback, convertToSourceConfig } from './rssFallbackService';
+import { shouldFilterContent, validateContent } from './contentGuidelines';
+import { getRSSAlternatives } from '../data/alternative-sources';
 
 const parser = new Parser({
   customFields: {
@@ -62,23 +64,17 @@ function extractKeySubject(title: string): string | null {
   return null;
 }
 
-// 카테고리 이름 → slug 매핑 (NEW SEXY)
+// 카테고리 이름 → slug 매핑 (NEW SEXY - 9개 카테고리)
 const categorySlugMap: Record<string, string> = {
   '패션': 'fashion',
   '뷰티': 'beauty',
   '여행': 'travel',
   '라이프스타일': 'lifestyle',
-  '글로벌푸드': 'global-food',
-  '건강푸드': 'health-food',
-  '하우징': 'housing',
-  '글로벌트렌드': 'global-trends',
-  '시니어시장': 'senior-market',
-  '심리': 'psychology',
-  '섹슈얼리티': 'sexuality',
-  '운동': 'exercise',
-  // 레거시 호환
-  '컬처': 'culture',
   '푸드': 'food',
+  '하우징': 'housing',
+  '심리': 'mind',
+  '섹슈얼리티': 'sexuality',
+  '운동': 'fitness',
 };
 
 /**
@@ -99,6 +95,43 @@ async function getCategoryId(categoryName: string): Promise<string | null> {
 
   if (error) {
     console.error(`카테고리 조회 실패 (${slug}):`, error);
+    return null;
+  }
+
+  return data?.id || null;
+}
+
+/**
+ * 카테고리 ID로 해당 카테고리의 서브카테고리 목록 조회
+ */
+async function getSubcategoriesByCategoryId(categoryId: string): Promise<Array<{id: string, name: string, slug: string}>> {
+  const { data, error } = await supabase
+    .from('subcategories')
+    .select('id, name, slug')
+    .eq('category_id', categoryId)
+    .neq('name', 'ALL'); // ALL은 제외 (특정 서브카테고리만)
+
+  if (error) {
+    console.error(`서브카테고리 조회 실패 (category_id: ${categoryId}):`, error);
+    return [];
+  }
+
+  return data || [];
+}
+
+/**
+ * 서브카테고리 이름으로 subcategory_id 조회
+ */
+async function getSubcategoryId(categoryId: string, subcategoryName: string): Promise<string | null> {
+  const { data, error} = await supabase
+    .from('subcategories')
+    .select('id')
+    .eq('category_id', categoryId)
+    .ilike('name', subcategoryName) // 대소문자 무시 검색
+    .single();
+
+  if (error) {
+    console.error(`서브카테고리 조회 실패 (${subcategoryName}):`, error);
     return null;
   }
 
@@ -192,35 +225,79 @@ export async function collectAndRewriteCategory(
   // 🔄 자동 Fallback: 수집된 기사가 너무 적으면 대체 소스 시도
   if (allArticles.length < maxArticles) {
     console.log(`  ⚠️  수집된 기사가 부족합니다 (${allArticles.length}/${maxArticles}개)`);
-    console.log(`  🔄 자동 대체 소스 검색 중...`);
+    console.log(`  🔄 자동 대체 소스 pool에서 검색 중...`);
 
-    const fallbackSource = await findWorkingFallback(category);
+    // Alternative Sources에서 우선순위 순으로 가져오기
+    const alternatives = getRSSAlternatives(category);
 
-    if (fallbackSource) {
-      console.log(`  ✅ 대체 소스 발견: ${fallbackSource.name}`);
-      const fallbackConfig = convertToSourceConfig(fallbackSource);
-      const fallbackArticles = await collectFromRSS(fallbackConfig.url, category);
+    if (alternatives.length > 0) {
+      console.log(`  💡 ${alternatives.length}개 대체 소스 발견 (우선순위 순)`);
 
-      if (fallbackArticles.length > 0) {
-        allArticles.push(...fallbackArticles);
-        console.log(`  ✅ 대체 소스에서 ${fallbackArticles.length}개 추가 수집`);
-        console.log(`  📊 총 ${allArticles.length}개 기사 확보`);
+      // 우선순위 순서대로 시도
+      for (const alt of alternatives) {
+        if (allArticles.length >= maxArticles) break; // 충분히 수집했으면 중단
+
+        console.log(`  🔍 시도: ${alt.name} (우선순위 ${alt.priority})...`);
+
+        try {
+          const fallbackArticles = await collectFromRSS(alt.url!, category);
+
+          if (fallbackArticles.length > 0) {
+            allArticles.push(...fallbackArticles);
+            console.log(`  ✅ ${alt.name}에서 ${fallbackArticles.length}개 수집 성공!`);
+            console.log(`  📊 누적: ${allArticles.length}개`);
+            break; // 성공하면 중단
+          } else {
+            console.log(`  ❌ ${alt.name}: 기사 없음`);
+          }
+        } catch (error: any) {
+          console.log(`  ❌ ${alt.name} 실패: ${error.message}`);
+          // 다음 대체 소스로 계속 시도
+        }
       }
     } else {
-      console.log(`  ❌ 작동하는 대체 소스를 찾지 못했습니다.`);
+      console.log(`  ❌ 대체 소스 pool이 비어있습니다.`);
     }
   }
 
-  // 최신 N개만 선택
-  const selectedArticles = allArticles.slice(0, maxArticles);
+  // 🔥 중복 이미지 대비: 더 많은 기사를 준비 (최대 3배)
+  // 목표: maxArticles개 성공, 하지만 중복으로 인한 스킵을 대비해 더 많이 처리
+  const bufferMultiplier = 3;
+  const articlesToProcess = Math.min(allArticles.length, maxArticles * bufferMultiplier);
+  const selectedArticles = allArticles.slice(0, articlesToProcess);
 
-  console.log(`\n🤖 AI 리라이팅 시작 (${selectedArticles.length}개)`);
+  console.log(`\n🤖 AI 리라이팅 시작`);
+  console.log(`   목표: ${maxArticles}개 성공`);
+  console.log(`   준비: ${selectedArticles.length}개 처리 예정 (중복 대비)`);
 
-  // 각 아티클 리라이팅 및 저장
-  for (let i = 0; i < selectedArticles.length; i++) {
+  let successCount = 0; // 성공한 기사 수 추적
+  const maxAttempts = 50; // 안전 장치: 최대 50개까지만 시도
+
+  // 각 아티클 리라이팅 및 저장 (성공 목표 달성까지)
+  for (let i = 0; i < selectedArticles.length && successCount < maxArticles && i < maxAttempts; i++) {
     const article = selectedArticles[i];
     try {
-      console.log(`  [${i + 1}/${selectedArticles.length}] "${article.title}" 처리 중...`);
+      console.log(`\n  [시도 ${i + 1}/${selectedArticles.length}] [성공 ${successCount}/${maxArticles}] "${article.title}" 처리 중...`);
+
+      // 🔥 성능 최적화: 이미지 중복 체크를 맨 앞으로 이동 (AI 처리 전)
+      // RSS에서 추출한 이미지가 있으면 먼저 중복 체크
+      const allImagesEarly = extractAllImagesFromRSS(article.rawItem);
+      if (allImagesEarly.length > 0) {
+        const { data: existingArticle } = await supabase
+          .from('articles')
+          .select('id, title')
+          .eq('featured_image_url', allImagesEarly[0])
+          .limit(1)
+          .single();
+
+        if (existingArticle) {
+          console.log(`    ⚠️  중복 이미지 감지 (조기 체크)! 이미 사용 중: "${existingArticle.title}"`);
+          console.log(`    ⏭️  이 기사는 스킵합니다 (AI 처리 전 차단으로 60초 절약)`);
+          result.failed++;
+          result.errors.push(`"${article.title}": 중복 이미지 (이미 사용 중: ${existingArticle.title})`);
+          continue; // AI 처리하지 않고 바로 다음 기사로
+        }
+      }
 
       // 1단계: AI로 실제 카테고리 추론 (RSS 소스 카테고리가 정확하지 않을 수 있음)
       const inferredCategory = await inferCategory(
@@ -229,6 +306,16 @@ export async function collectAndRewriteCategory(
         article.category,
         openaiApiKey
       );
+
+      // 1.2단계: 콘텐츠 가이드라인 검증 (필터링 체크)
+      const filterCheck = shouldFilterContent(article.title, article.content, inferredCategory);
+      if (filterCheck.shouldFilter) {
+        console.log(`    ⚠️  콘텐츠 필터링: ${filterCheck.reason}`);
+        console.log(`    ❌ 건너뛰기: "${article.title}"`);
+        result.failed++;
+        result.errors.push(`필터링됨: ${article.title} - ${filterCheck.reason}`);
+        continue; // 다음 아티클로
+      }
 
       // 1.5단계: 이미지 먼저 추출 (리라이팅 제약용)
       let earlyImageUrl = article.imageUrl;
@@ -257,10 +344,28 @@ export async function collectAndRewriteCategory(
         keySubject: keySubject || undefined, // 핵심 주제 전달
       });
 
+      // 2.5단계: 리라이팅된 콘텐츠 검증 (가이드라인 체크)
+      const validation = validateContent(rewritten.title, rewritten.content, inferredCategory);
+      if (!validation.isValid && validation.warnings.length > 0) {
+        validation.warnings.forEach(warning => {
+          console.log(`    ${warning}`);
+        });
+      }
+
       // category_id 조회
       const categoryId = await getCategoryId(inferredCategory);
       if (!categoryId) {
         throw new Error(`카테고리 ID를 찾을 수 없습니다: ${inferredCategory}`);
+      }
+
+      // 🆕 서브카테고리 추론 및 ID 조회 (현재 비활성화 - 성능 최적화)
+      const subcategories = await getSubcategoriesByCategoryId(categoryId);
+      let subcategoryId: string | null = null;
+
+      if (subcategories.length > 0) {
+        // 서브카테고리가 있으면 첫 번째를 기본값으로 사용 (AI 추론 비활성화)
+        subcategoryId = subcategories[0].id;
+        console.log(`    📂 서브카테고리: ${subcategories[0].name} (자동 할당)`);
       }
 
       // editor UUID 조회 (editor string ID → UUID 변환)
@@ -308,6 +413,25 @@ export async function collectAndRewriteCategory(
       // 추가 이미지들 (첫 번째 제외)
       const additionalImages = allImages.slice(1, 6); // 최대 5개 추가 이미지
 
+      // 🆕 이미지 중복 체크 (OG 이미지나 Unsplash 이미지의 경우만)
+      // RSS 이미지는 맨 앞에서 이미 체크했으므로 여기서는 스킵
+      if (featuredImageUrl && allImages.length === 0) {
+        const { data: existingArticle } = await supabase
+          .from('articles')
+          .select('id, title')
+          .eq('featured_image_url', featuredImageUrl)
+          .limit(1)
+          .single();
+
+        if (existingArticle) {
+          console.log(`    ⚠️  중복 이미지 감지! 이미 사용 중: "${existingArticle.title}"`);
+          console.log(`    ⏭️  이 기사는 스킵합니다.`);
+          result.failed++;
+          result.errors.push(`"${article.title}": 중복 이미지 (이미 사용 중: ${existingArticle.title})`);
+          continue; // 다음 기사로
+        }
+      }
+
       // Supabase에 저장
       const { data, error } = await supabase
         .from('articles')
@@ -315,6 +439,7 @@ export async function collectAndRewriteCategory(
           title: rewritten.title,
           content: rewritten.content,
           category_id: categoryId,
+          subcategory_id: subcategoryId, // 🆕 AI가 추론한 서브카테고리
           editor_id: editorId, // 🆕 editor_id 사용 (creators → editors 테이블)
           slug: slug,
           published_at: article.publishedAt,
@@ -330,7 +455,8 @@ export async function collectAndRewriteCategory(
         throw error;
       }
 
-      console.log(`    ✅ 저장 완료 (ID: ${data.id})`);
+      successCount++; // 성공 카운터 증가
+      console.log(`    ✅ 저장 완료 (ID: ${data.id}) - 성공 ${successCount}/${maxArticles}`);
       console.log(`    📝 제목: ${rewritten.title}`);
       console.log(`    📄 요약: ${rewritten.excerpt.substring(0, 50)}...`);
       console.log(`    📏 본문 길이: ${rewritten.content.length}자`);
@@ -340,6 +466,12 @@ export async function collectAndRewriteCategory(
       }
       result.success++;
       result.articles.push(data);
+
+      // 목표 달성 시 조기 종료
+      if (successCount >= maxArticles) {
+        console.log(`\n🎯 목표 달성! ${maxArticles}개 기사 수집 완료`);
+        break;
+      }
 
       // API Rate Limit 방지
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -354,7 +486,7 @@ export async function collectAndRewriteCategory(
 }
 
 /**
- * 모든 카테고리에서 콘텐츠 수집
+ * 모든 카테고리에서 콘텐츠 수집 (NEW SEXY - 9개 카테고리)
  */
 export async function collectAllCategories(
   articlesPerCategory: number = 3,
@@ -365,10 +497,8 @@ export async function collectAllCategories(
     '패션',
     '뷰티',
     '여행',
-    '시니어시장',
-    '글로벌트렌드',
-    '글로벌푸드',
-    '건강푸드',
+    '라이프스타일',
+    '푸드',
     '하우징',
     '심리',
     '섹슈얼리티',
@@ -450,33 +580,40 @@ export async function scheduledCollection(openaiApiKey?: string, anthropicApiKey
 /**
  * 요일별 카테고리 순환 스케줄
  */
+/**
+ * 3일 주기 에디터 로테이션 스케줄 (9개 카테고리)
+ * 9명의 에디터가 3일마다 한 번씩 글 작성
+ * - Day 1: Sophia(패션), Jane(뷰티), Clara(여행)
+ * - Day 2: Marcus(라이프스타일), Antoine(푸드), Thomas(하우징)
+ * - Day 3: Sarah(섹슈얼리티), Rebecca(심리), Mia(건강)
+ */
 const WEEKLY_SCHEDULE: Record<number, { categories: string[]; counts: number[] }> = {
-  0: { // 일요일 - 라이프스타일
-    categories: ['라이프스타일'],
-    counts: [3]
+  0: { // 일요일 - Day 1
+    categories: ['패션', '뷰티', '여행'],
+    counts: [1, 1, 1]
   },
-  1: { // 월요일 - 패션 & 뷰티
-    categories: ['패션', '뷰티'],
-    counts: [2, 1]
+  1: { // 월요일 - Day 2
+    categories: ['라이프스타일', '푸드', '하우징'],
+    counts: [1, 1, 1]
   },
-  2: { // 화요일 - 여행 & 뷰티
-    categories: ['여행', '뷰티'],
-    counts: [2, 1]
+  2: { // 화요일 - Day 3
+    categories: ['섹슈얼리티', '심리', '운동'],
+    counts: [1, 1, 1]
   },
-  3: { // 수요일 - 글로벌푸드 & 하우징
-    categories: ['글로벌푸드', '하우징'],
-    counts: [2, 1]
+  3: { // 수요일 - Day 1
+    categories: ['패션', '뷰티', '여행'],
+    counts: [1, 1, 1]
   },
-  4: { // 목요일 - 글로벌트렌드 & 뷰티
-    categories: ['글로벌트렌드', '뷰티'],
-    counts: [2, 1]
+  4: { // 목요일 - Day 2
+    categories: ['라이프스타일', '푸드', '하우징'],
+    counts: [1, 1, 1]
   },
-  5: { // 금요일 - 심리 & 섹슈얼리티
-    categories: ['심리', '섹슈얼리티'],
-    counts: [2, 1]
+  5: { // 금요일 - Day 3
+    categories: ['섹슈얼리티', '심리', '운동'],
+    counts: [1, 1, 1]
   },
-  6: { // 토요일 - 운동 & 섹슈얼리티 & 건강푸드
-    categories: ['운동', '섹슈얼리티', '건강푸드'],
+  6: { // 토요일 - Day 1
+    categories: ['패션', '뷰티', '여행'],
     counts: [1, 1, 1]
   }
 };

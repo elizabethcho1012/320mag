@@ -3,6 +3,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { aiEditors, getEditorByCategory } from '../data/editors';
+import { getGuidelinesPrompt } from './contentGuidelines';
 
 // 환경 변수에서 API 키 가져오기 (브라우저와 Node.js 모두 지원)
 const ANTHROPIC_API_KEY = typeof import.meta !== 'undefined' && import.meta.env
@@ -49,7 +50,7 @@ export async function rewriteContent({
 
   // Anthropic API 키 확인 (파라미터로 전달된 키 우선 사용)
   const rawKey = providedApiKey || ANTHROPIC_API_KEY;
-  const apiKey = rawKey?.trim().replace(/^["']|["']$/g, ''); // 따옴표 제거
+  const apiKey = typeof rawKey === 'string' ? rawKey.trim().replace(/^["']|["']$/g, '') : ''; // 따옴표 제거
   if (!apiKey || apiKey === 'your-anthropic-api-key-here') {
     console.error('ANTHROPIC_API_KEY:', apiKey ? '설정됨 (값 숨김)' : '없음');
     throw new Error('Anthropic API 키가 설정되지 않았습니다. .env 파일을 확인하세요.');
@@ -65,7 +66,9 @@ export async function rewriteContent({
   }
 
   // 개선된 시스템 프롬프트 (사실 기반 + 법적 안전성 + AI 티 방지)
-  const systemPrompt = `당신은 40-60대를 위한 시니어 매거진 "Third Twenty"의 ${editor.name} 에디터입니다.
+  const systemPrompt = `당신은 Ageless Generation(AGene, 에이진)을 위한 라이프스타일 매거진 "Third Twenty"의 ${editor.name} 에디터입니다.
+
+${getGuidelinesPrompt()}
 
 🎯 핵심 원칙 (매우 중요!):
 1. 매거진은 사실을 다룹니다 - 가상의 이야기를 만들지 마세요

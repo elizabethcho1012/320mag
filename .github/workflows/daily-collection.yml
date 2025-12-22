@@ -3,6 +3,7 @@ name: Daily Content Collection
 on:
   schedule:
     # 매일 오전 9시 (한국시간 기준, UTC는 0시)
+    # 3일 주기 로테이션: 9명의 에디터가 매일 3명씩 순환
     - cron: '0 0 * * *'
 
   # 수동 실행도 가능

@@ -11,12 +11,14 @@ const SubcategoryTabs: React.FC<{
   onSubcategoryChange: (subcategory: string) => void;
   isDarkMode: boolean;
   highContrast: boolean;
+  isMindCategory?: boolean;
 }> = ({
   categorySlug,
   selectedSubcategory,
   onSubcategoryChange,
   isDarkMode,
-  highContrast
+  highContrast,
+  isMindCategory = false
 }) => {
   const {
     data: categories = []
@@ -25,14 +27,22 @@ const SubcategoryTabs: React.FC<{
   // 현재 카테고리의 서브카테고리 가져오기
   const currentCategory = categories.find(cat => cat.slug === getCategorySlug(categorySlug));
   const subcategories = currentCategory?.subcategories || [];
-  
+
   // 이미 ALL이 있는지 확인하고 없으면 추가
   const hasAll = subcategories.some(sub => sub.name === 'ALL' || sub.slug === 'all');
-  const allSubcategories = hasAll ? subcategories : [{
+  let allSubcategories = hasAll ? subcategories : [{
     name: 'ALL',
     slug: 'all'
   }, ...subcategories];
-  
+
+  // MIND 카테고리인 경우 "SEXUALITY (Special)" 탭 추가
+  if (isMindCategory) {
+    allSubcategories = [...allSubcategories, {
+      name: 'SEXUALITY (Special)',
+      slug: 'sexuality-special'
+    }];
+  }
+
   return <div className="mb-8">
       <div className={`border-b ${isDarkMode ? 'border-gray-700' : highContrast ? 'border-black' : 'border-gray-200'}`}>
         <nav className="-mb-px flex justify-center space-x-8 overflow-x-auto">
@@ -61,8 +71,14 @@ const getCategorySlug = (categoryName: string): string => {
   } = {
     '패션': 'fashion',
     '뷰티': 'beauty',
+    '여행': 'travel',
     '컬처': 'culture',
-    '라이프스타일': 'lifestyle'
+    '라이프스타일': 'lifestyle',
+    '푸드': 'food',
+    '심리': 'psychology',
+    '운동': 'exercise',
+    '하우징': 'housing',
+    '글로벌트렌드': 'global-trends'
   };
   return categoryMap[categoryName] || categoryName.toLowerCase();
 };
@@ -74,8 +90,14 @@ const getCategoryDisplayName = (categoryName: string): string => {
   } = {
     '패션': 'FASHION',
     '뷰티': 'BEAUTY',
+    '여행': 'TRAVEL',
     '컬처': 'CULTURE',
     '라이프스타일': 'LIFESTYLE',
+    '푸드': 'FOOD',
+    '심리': 'MIND',
+    '운동': 'FITNESS',
+    '하우징': 'HOUSING',
+    '글로벌트렌드': 'GLOBAL TRENDS',
     'creators': 'CREATORS'
   };
   return displayMap[categoryName] || categoryName.toUpperCase();
@@ -91,11 +113,27 @@ const CategoryPage: React.FC<CategoryPageProps> = ({
 
   // Supabase에서 카테고리별 기사 가져오기
   const categorySlug = getCategorySlug(category);
-  const {
-    data: allCategoryArticles = [],
-    isLoading,
-    error
-  } = useArticlesByCategory(categorySlug);
+  const isMindCategory = category === '심리';
+
+  // MIND 카테고리는 psychology와 sexuality 두 카테고리의 기사를 모두 가져옴
+  const psychologyQuery = useArticlesByCategory('psychology');
+  const sexualityQuery = useArticlesByCategory('sexuality');
+  const regularQuery = useArticlesByCategory(categorySlug);
+
+  // MIND 카테고리인 경우 두 쿼리 결과를 합침
+  const allCategoryArticles = isMindCategory
+    ? [...(psychologyQuery.data || []), ...(sexualityQuery.data || [])].sort(
+        (a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
+      )
+    : (regularQuery.data || []);
+
+  const isLoading = isMindCategory
+    ? (psychologyQuery.isLoading || sexualityQuery.isLoading)
+    : regularQuery.isLoading;
+
+  const error = isMindCategory
+    ? (psychologyQuery.error || sexualityQuery.error)
+    : regularQuery.error;
   const bgClass = isDarkMode ? 'bg-gray-900' : 'bg-gray-50';
   const textClass = isDarkMode ? 'text-gray-100' : 'text-gray-900';
   const subtextClass = isDarkMode ? 'text-gray-300' : 'text-gray-600';
@@ -135,6 +173,13 @@ const CategoryPage: React.FC<CategoryPageProps> = ({
   // 서브카테고리별 필터링
   const filteredArticles = allCategoryArticles.filter(article => {
     if (selectedSubcategory === "ALL") return true;
+
+    // MIND 카테고리에서 "SEXUALITY (Special)" 탭 선택 시 sexuality 카테고리의 모든 기사 표시
+    if (isMindCategory && selectedSubcategory === "SEXUALITY (Special)") {
+      return article.categories?.slug === 'sexuality';
+    }
+
+    // 그 외에는 일반적인 서브카테고리 필터링
     return article.subcategories?.name === selectedSubcategory;
   });
 
@@ -165,13 +210,6 @@ const CategoryPage: React.FC<CategoryPageProps> = ({
           )}
         </div>
 
-        <SubcategoryTabs
-          categorySlug={categorySlug}
-          selectedSubcategory={selectedSubcategory}
-          onSubcategoryChange={handleSubcategoryChange}
-          isDarkMode={isDarkMode}
-          highContrast={false}
-        />
 
         {currentArticles.length > 0 ? (
           <>

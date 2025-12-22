@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import Footer from '../components/layout/Footer';
+import AdBannerSlider from '../components/AdBannerSlider';
 import { usePublishedArticles, useFeaturedArticles, useCreators } from '../hooks/useArticles';
 
 interface HomePageProps {
   onArticleClick: (id: number | string) => void;
   isDarkMode: boolean;
   highContrast: boolean;
+  onNavigate?: (page: string) => void;
 }
 
-const HomePage: React.FC<HomePageProps> = ({ onArticleClick, isDarkMode, highContrast }) => {
+const HomePage: React.FC<HomePageProps> = ({ onArticleClick, isDarkMode, highContrast, onNavigate }) => {
   // Supabase에서 실제 데이터 가져오기
   const { data: dbArticles = [], isLoading: articlesLoading, error: articlesError } = usePublishedArticles();
   const { data: dbFeaturedArticles = [], isLoading: featuredLoading } = useFeaturedArticles();
@@ -78,7 +80,7 @@ const HomePage: React.FC<HomePageProps> = ({ onArticleClick, isDarkMode, highCon
 
   // 최신 기사 - 다양한 카테고리에서 골고루 선택 (중복 제거)
   const getLatestDiverseNews = () => {
-    const categories = ['패션', '뷰티', '컬처', '푸드', '하우징', '글로벌트렌드', '라이프스타일'];
+    const categories = ['패션', '뷰티', '여행', '라이프스타일', '글로벌푸드', '건강푸드', '하우징', '글로벌트렌드', '심리', '섹슈얼리티', '운동'];
     const result: any[] = [];
     const categoryUsed = new Set<string>();
 
@@ -91,17 +93,17 @@ const HomePage: React.FC<HomePageProps> = ({ onArticleClick, isDarkMode, highCon
         result.push(article);
         categoryUsed.add(categoryName);
         usedArticleIds.add(article.id);
-        if (result.length >= 4) break;
+        if (result.length >= 8) break;
       }
     }
 
-    // 4개가 안 되면 남은 최신 기사로 채우기
-    if (result.length < 4) {
+    // 8개가 안 되면 남은 최신 기사로 채우기
+    if (result.length < 8) {
       for (const article of dbArticles) {
         if (!usedArticleIds.has(article.id)) {
           result.push(article);
           usedArticleIds.add(article.id);
-          if (result.length >= 4) break;
+          if (result.length >= 8) break;
         }
       }
     }
@@ -145,16 +147,20 @@ const HomePage: React.FC<HomePageProps> = ({ onArticleClick, isDarkMode, highCon
       items: getArticlesByCategory('뷰티')
     },
     {
-      title: 'CULTURE',
-      items: getArticlesByCategory('컬처')
+      title: 'TRAVEL',
+      items: getArticlesByCategory('여행')
     },
     {
       title: 'LIFESTYLE',
       items: getArticlesByCategory('라이프스타일')
     },
     {
-      title: 'FOOD',
-      items: getArticlesByCategory('푸드')
+      title: 'GLOBAL FOOD',
+      items: getArticlesByCategory('글로벌푸드')
+    },
+    {
+      title: 'HEALTHY FOOD',
+      items: getArticlesByCategory('건강푸드')
     },
     {
       title: 'HOUSING',
@@ -163,23 +169,38 @@ const HomePage: React.FC<HomePageProps> = ({ onArticleClick, isDarkMode, highCon
     {
       title: 'GLOBAL TRENDS',
       items: getArticlesByCategory('글로벌트렌드')
+    },
+    {
+      title: 'PSYCHOLOGY',
+      items: getArticlesByCategory('심리')
+    },
+    {
+      title: 'SEXUALITY',
+      items: getArticlesByCategory('섹슈얼리티')
+    },
+    {
+      title: 'FITNESS',
+      items: getArticlesByCategory('운동')
     }
   ];
 
   return (
     <div className={`${bgClass} transition-colors duration-300`}>
+      {/* 상단 광고 배너 */}
+      <AdBannerSlider position="top" isDarkMode={isDarkMode} />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hero Slide - Featured 기사들 표시 */}
-        <HeroSlideLocal 
-          featuredArticles={featuredArticles} 
+        <HeroSlideLocal
+          featuredArticles={featuredArticles}
           onArticleClick={onArticleClick}
           isDarkMode={isDarkMode}
         />
-        
+
         {/* 카테고리별 콘텐츠 섹션 */}
         {contentSections.map((section, index) => (
           section.items.length > 0 && (
-            <ContentSectionLocal 
+            <ContentSectionLocal
               key={index}
               title={section.title}
               items={section.items}
@@ -188,14 +209,17 @@ const HomePage: React.FC<HomePageProps> = ({ onArticleClick, isDarkMode, highCon
             />
           )
         ))}
-        
+
         {/* 크리에이터 섹션 - DB에 등록된 크리에이터가 있을 때만 표시 */}
         {creators.length > 0 && (
           <CreatorsSectionLocal creators={creators} isDarkMode={isDarkMode} />
         )}
       </div>
-      
-      <Footer isDarkMode={isDarkMode} />
+
+      {/* 하단 광고 배너 */}
+      <AdBannerSlider position="bottom" isDarkMode={isDarkMode} />
+
+      <Footer isDarkMode={isDarkMode} onNavigate={onNavigate} />
     </div>
   );
 };

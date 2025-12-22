@@ -14,6 +14,13 @@ import ChallengesPage from './pages/ChallengesPage';
 import AdminPage from './pages/AdminPage';
 import ArticleDetailPage from './pages/ArticleDetailPage';
 import SearchResultsPage from './pages/SearchResultsPage';
+import SubscriptionPage from './pages/SubscriptionPage';
+import AboutPage from './pages/AboutPage';
+import AdvertisePage from './pages/AdvertisePage';
+import PrivacyPage from './pages/PrivacyPage';
+import NoticesPage from './pages/NoticesPage';
+import WebAppsPage from './pages/WebAppsPage';
+import InitialAdPopup from './components/InitialAdPopup';
 
 // React Query 클라이언트 생성
 const queryClient = new QueryClient({
@@ -107,7 +114,8 @@ const AppContent: React.FC = () => {
     const pageProps = {
       onArticleClick: handleArticleClick,
       isDarkMode,
-      highContrast
+      highContrast,
+      onNavigate: setCurrentPage
     };
 
     switch (currentPage) {
@@ -130,14 +138,36 @@ const AppContent: React.FC = () => {
           isDarkMode={isDarkMode}
           onBack={() => setCurrentPage('home')}
         />;
+      case 'subscription':
+        return <SubscriptionPage isDarkMode={isDarkMode} onBack={() => setCurrentPage('home')} />;
+      case 'about':
+        return <AboutPage isDarkMode={isDarkMode} onBack={() => setCurrentPage('home')} />;
+      case 'advertise':
+        return <AdvertisePage isDarkMode={isDarkMode} onBack={() => setCurrentPage('home')} />;
+      case 'privacy':
+        return <PrivacyPage isDarkMode={isDarkMode} onBack={() => setCurrentPage('home')} />;
+      case 'notices':
+        return <NoticesPage isDarkMode={isDarkMode} onBack={() => setCurrentPage('home')} />;
+      case 'webapps':
+        return <WebAppsPage isDarkMode={isDarkMode} onBack={() => setCurrentPage('home')} />;
       case 'fashion':
         return <CategoryPage category="패션" onArticleClick={handleArticleClick} isDarkMode={isDarkMode} />;
       case 'beauty':
         return <CategoryPage category="뷰티" onArticleClick={handleArticleClick} isDarkMode={isDarkMode} />;
-      case 'culture':
-        return <CategoryPage category="컬처" onArticleClick={handleArticleClick} isDarkMode={isDarkMode} />;
+      case 'travel':
+        return <CategoryPage category="여행" onArticleClick={handleArticleClick} isDarkMode={isDarkMode} />;
       case 'lifestyle':
         return <CategoryPage category="라이프스타일" onArticleClick={handleArticleClick} isDarkMode={isDarkMode} />;
+      case 'food':
+        return <CategoryPage category="푸드" onArticleClick={handleArticleClick} isDarkMode={isDarkMode} />;
+      case 'mind':
+        return <CategoryPage category="심리" onArticleClick={handleArticleClick} isDarkMode={isDarkMode} />;
+      case 'fitness':
+        return <CategoryPage category="운동" onArticleClick={handleArticleClick} isDarkMode={isDarkMode} />;
+      case 'housing':
+        return <CategoryPage category="하우징" onArticleClick={handleArticleClick} isDarkMode={isDarkMode} />;
+      case 'sexuality':
+        return <CategoryPage category="섹슈얼리티" onArticleClick={handleArticleClick} isDarkMode={isDarkMode} />;
       default:
         return <HomePage {...pageProps} />;
     }
@@ -149,6 +179,9 @@ const AppContent: React.FC = () => {
         <div className={`min-h-screen transition-colors duration-300 ${fontSizeClasses[fontSize]} ${
           isDarkMode ? 'bg-gray-900' : highContrast ? 'bg-white' : 'bg-gray-50'
         }`}>
+          {/* 초기 진입 광고 팝업 (프리미엄 회원 제외) */}
+          <InitialAdPopup />
+
           <Header
             currentPage={currentPage}
             setCurrentPage={setCurrentPage}
