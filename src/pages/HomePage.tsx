@@ -326,7 +326,7 @@ const ContentSectionLocal: React.FC<{
             <img
               src={article.image || 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=400&h=300&fit=crop'}
               alt={article.title}
-              className="w-full h-48 object-cover mb-3 group-hover:opacity-90 transition-opacity"
+              className="w-full h-48 object-contain mb-3 group-hover:opacity-90 transition-opacity rounded-lg bg-gray-100"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.src = 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=400&h=300&fit=crop';

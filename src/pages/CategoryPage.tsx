@@ -181,7 +181,7 @@ const CategoryPage: React.FC<CategoryPageProps> = ({
                   <img
                     src={article.featured_image_url || 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&h=600&fit=crop'}
                     alt={article.title}
-                    className="w-full h-64 object-cover mb-3 group-hover:opacity-90 transition-opacity rounded-lg"
+                    className="w-full h-64 object-contain mb-3 group-hover:opacity-90 transition-opacity rounded-lg bg-gray-100"
                   />
                   <span className="text-xs text-purple-600 uppercase tracking-wide font-medium mb-2 block">
                     {article.subcategories?.name || 'ARTICLE'}
