@@ -31,6 +31,9 @@ const HomePage: React.FC<HomePageProps> = ({ onArticleClick, isDarkMode, highCon
           <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
             콘텐츠를 불러오고 있습니다...
           </p>
+          <p className={`text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-400'} mt-2`}>
+            {articlesLoading && '기사 로딩 중...'} {featuredLoading && 'Featured 로딩 중...'}
+          </p>
         </div>
       </div>
     );
@@ -38,11 +41,15 @@ const HomePage: React.FC<HomePageProps> = ({ onArticleClick, isDarkMode, highCon
 
   // 에러 상태
   if (articlesError) {
+    console.error('HomePage 에러:', articlesError);
     return (
       <div className={`${bgClass} transition-colors duration-300 min-h-screen flex items-center justify-center`}>
-        <div className="text-center">
+        <div className="text-center max-w-md mx-auto p-6">
           <p className={`text-lg ${isDarkMode ? 'text-red-400' : 'text-red-600'} mb-4`}>
             콘텐츠를 불러오는 중 오류가 발생했습니다.
+          </p>
+          <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mb-4`}>
+            {articlesError.message || '알 수 없는 오류'}
           </p>
           <button
             onClick={() => window.location.reload()}
