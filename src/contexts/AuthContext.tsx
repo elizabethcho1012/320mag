@@ -82,7 +82,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         createdAt: data.created_at,
       };
     } catch (error) {
-      console.error('프로필 조회 실패:', error);
+      // Timeout 등의 에러 발생 시에도 null 반환하고 앱은 계속 작동
+      console.error('프로필 조회 실패 (timeout 가능):', error);
       return null;
     }
   };
@@ -208,22 +209,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // 인증 상태 변화 감지
   useEffect(() => {
     let isMounted = true;
+    let authInitialized = false;
 
     // 초기 세션 확인
     const initializeAuth = async () => {
       try {
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
 
         if (!isMounted) return;
+
+        // getSession이 timeout 등으로 실패한 경우
+        if (sessionError) {
+          console.error('세션 조회 오류:', sessionError);
+          // 로그인 안 한 상태로 간주하고 계속 진행
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          authInitialized = true;
+          setLoading(false);
+          return;
+        }
 
         if (currentSession?.user) {
           setSession(currentSession);
           setUser(currentSession.user);
 
-          // 프로필 조회
+          // 프로필 조회 (타임아웃되면 null 반환)
           let userProfile = await fetchProfile(currentSession.user.id);
 
-          // 프로필이 없으면 생성
+          // 프로필이 없으면 생성 시도 (타임아웃되면 null로 유지)
           if (!userProfile && currentSession.user.email) {
             const username = currentSession.user.user_metadata?.username ||
                            currentSession.user.email.split('@')[0];
@@ -244,20 +258,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } catch (error) {
         console.error('인증 초기화 오류:', error);
+        // 에러 발생 시에도 로그인 안 한 상태로 진행
+        if (isMounted) {
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+        }
       } finally {
         if (isMounted) {
+          authInitialized = true;
           setLoading(false);
         }
       }
     };
 
-    // 무한 로딩 방지용 타임아웃 (5초 후 강제로 loading 해제)
+    // 무한 로딩 방지용 타임아웃 (3초 후 강제로 loading 해제)
     const timeoutId = setTimeout(() => {
-      if (isMounted) {
+      if (isMounted && !authInitialized) {
         console.warn('Auth initialization timeout - forcing loading to false');
         setLoading(false);
       }
-    }, 5000);
+    }, 3000);
 
     initializeAuth();
 

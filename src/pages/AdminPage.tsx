@@ -2023,9 +2023,23 @@ const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
 const CreatorsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
   const [creators, setCreators] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showEditor, setShowEditor] = useState(false);
+  const [editingCreator, setEditingCreator] = useState<any | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    profession: '',
+    bio: '',
+    image_url: '',
+    email: '',
+    verified: false,
+    status: 'active' as 'active' | 'inactive',
+  });
 
   const textClass = isDarkMode ? 'text-gray-100' : 'text-gray-900';
   const cardClass = isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
+  const inputClass = isDarkMode
+    ? 'bg-gray-700 border-gray-600 text-white'
+    : 'bg-white border-gray-300 text-gray-900';
 
   React.useEffect(() => {
     loadCreators();
@@ -2048,6 +2062,94 @@ const CreatorsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
     }
   };
 
+  const handleNew = () => {
+    setEditingCreator(null);
+    setFormData({
+      name: '',
+      profession: '',
+      bio: '',
+      image_url: '',
+      email: '',
+      verified: false,
+      status: 'active',
+    });
+    setShowEditor(true);
+  };
+
+  const handleEdit = (creator: any) => {
+    setEditingCreator(creator);
+    setFormData({
+      name: creator.name,
+      profession: creator.profession || '',
+      bio: creator.bio || '',
+      image_url: creator.image_url || '',
+      email: creator.email || '',
+      verified: creator.verified || false,
+      status: creator.status || 'active',
+    });
+    setShowEditor(true);
+  };
+
+  const handleSave = async () => {
+    if (!formData.name.trim()) {
+      alert('이름은 필수입니다.');
+      return;
+    }
+
+    try {
+      const creatorData = {
+        name: formData.name.trim(),
+        profession: formData.profession.trim() || null,
+        bio: formData.bio.trim() || null,
+        image_url: formData.image_url.trim() || null,
+        email: formData.email.trim() || null,
+        verified: formData.verified,
+        status: formData.status,
+      };
+
+      if (editingCreator) {
+        const { error } = await supabase
+          .from('creators')
+          .update(creatorData)
+          .eq('id', editingCreator.id);
+
+        if (error) throw error;
+        alert('크리에이터가 수정되었습니다.');
+      } else {
+        const { error } = await supabase
+          .from('creators')
+          .insert([creatorData]);
+
+        if (error) throw error;
+        alert('크리에이터가 등록되었습니다.');
+      }
+
+      setShowEditor(false);
+      loadCreators();
+    } catch (error) {
+      console.error('크리에이터 저장 오류:', error);
+      alert('크리에이터 저장에 실패했습니다.');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('정말 삭제하시겠습니까?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('creators')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      alert('크리에이터가 삭제되었습니다.');
+      loadCreators();
+    } catch (error) {
+      console.error('크리에이터 삭제 오류:', error);
+      alert('크리에이터 삭제에 실패했습니다.');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -2056,11 +2158,142 @@ const CreatorsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
     );
   }
 
+  if (showEditor) {
+    return (
+      <div>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className={`text-2xl font-bold ${textClass}`}>
+            {editingCreator ? '크리에이터 수정' : '새 크리에이터 등록'}
+          </h2>
+          <button
+            onClick={() => setShowEditor(false)}
+            className="text-gray-500 hover:text-gray-700 px-4 py-2"
+          >
+            취소
+          </button>
+        </div>
+
+        <div className={`${cardClass} rounded-lg border p-6 space-y-4`}>
+          <div>
+            <label className={`block text-sm font-medium ${textClass} mb-2`}>
+              이름 *
+            </label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+              placeholder="크리에이터 이름"
+            />
+          </div>
+
+          <div>
+            <label className={`block text-sm font-medium ${textClass} mb-2`}>
+              직업/전문분야
+            </label>
+            <input
+              type="text"
+              value={formData.profession}
+              onChange={(e) => setFormData({ ...formData, profession: e.target.value })}
+              className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+              placeholder="예: 패션 스타일리스트"
+            />
+          </div>
+
+          <div>
+            <label className={`block text-sm font-medium ${textClass} mb-2`}>
+              소개
+            </label>
+            <textarea
+              value={formData.bio}
+              onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+              className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+              rows={4}
+              placeholder="크리에이터 소개"
+            />
+          </div>
+
+          <div>
+            <label className={`block text-sm font-medium ${textClass} mb-2`}>
+              이메일
+            </label>
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+              placeholder="creator@example.com"
+            />
+          </div>
+
+          <div>
+            <label className={`block text-sm font-medium ${textClass} mb-2`}>
+              프로필 이미지 URL
+            </label>
+            <input
+              type="text"
+              value={formData.image_url}
+              onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+              className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+              placeholder="https://example.com/profile.jpg"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                상태
+              </label>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+              >
+                <option value="active">활성</option>
+                <option value="inactive">비활성</option>
+              </select>
+            </div>
+
+            <div className="flex items-center pt-8">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.verified}
+                  onChange={(e) => setFormData({ ...formData, verified: e.target.checked })}
+                  className="w-4 h-4"
+                />
+                <span className={`text-sm ${textClass}`}>인증된 크리에이터</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button
+              onClick={handleSave}
+              className="flex-1 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              {editingCreator ? '수정' : '등록'}
+            </button>
+            <button
+              onClick={() => setShowEditor(false)}
+              className={`flex-1 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} ${textClass} px-4 py-2 rounded-lg hover:opacity-80 transition-opacity`}
+            >
+              취소
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className={`text-2xl font-bold ${textClass}`}>크리에이터 관리</h2>
-        <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+        <button
+          onClick={handleNew}
+          className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+        >
           새 크리에이터 등록
         </button>
       </div>
@@ -2104,10 +2337,16 @@ const CreatorsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
                 </div>
               </div>
               <div className="flex gap-2 mt-4">
-                <button className="flex-1 text-blue-600 hover:text-blue-700 py-1 rounded text-sm">
+                <button
+                  onClick={() => handleEdit(creator)}
+                  className="flex-1 text-blue-600 hover:text-blue-700 py-1 rounded text-sm"
+                >
                   수정
                 </button>
-                <button className="flex-1 text-red-600 hover:text-red-700 py-1 rounded text-sm">
+                <button
+                  onClick={() => handleDelete(creator.id)}
+                  className="flex-1 text-red-600 hover:text-red-700 py-1 rounded text-sm"
+                >
                   삭제
                 </button>
               </div>
@@ -2122,9 +2361,20 @@ const CreatorsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
 const CategoriesContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
   const [categories, setCategories] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showEditor, setShowEditor] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<any | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    slug: '',
+    description: '',
+    order_index: '0',
+  });
 
   const textClass = isDarkMode ? 'text-gray-100' : 'text-gray-900';
   const cardClass = isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
+  const inputClass = isDarkMode
+    ? 'bg-gray-700 border-gray-600 text-white'
+    : 'bg-white border-gray-300 text-gray-900';
 
   React.useEffect(() => {
     loadCategories();
@@ -2150,6 +2400,85 @@ const CategoriesContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) =>
     }
   };
 
+  const handleNew = () => {
+    setEditingCategory(null);
+    setFormData({
+      name: '',
+      slug: '',
+      description: '',
+      order_index: '0',
+    });
+    setShowEditor(true);
+  };
+
+  const handleEdit = (category: any) => {
+    setEditingCategory(category);
+    setFormData({
+      name: category.name,
+      slug: category.slug,
+      description: category.description || '',
+      order_index: category.order_index?.toString() || '0',
+    });
+    setShowEditor(true);
+  };
+
+  const handleSave = async () => {
+    if (!formData.name.trim() || !formData.slug.trim()) {
+      alert('이름과 슬러그는 필수입니다.');
+      return;
+    }
+
+    try {
+      const categoryData = {
+        name: formData.name.trim(),
+        slug: formData.slug.trim(),
+        description: formData.description.trim() || null,
+        order_index: parseInt(formData.order_index) || 0,
+      };
+
+      if (editingCategory) {
+        const { error } = await supabase
+          .from('categories')
+          .update(categoryData)
+          .eq('id', editingCategory.id);
+
+        if (error) throw error;
+        alert('카테고리가 수정되었습니다.');
+      } else {
+        const { error } = await supabase
+          .from('categories')
+          .insert([categoryData]);
+
+        if (error) throw error;
+        alert('카테고리가 등록되었습니다.');
+      }
+
+      setShowEditor(false);
+      loadCategories();
+    } catch (error) {
+      console.error('카테고리 저장 오류:', error);
+      alert('카테고리 저장에 실패했습니다.');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('정말 삭제하시겠습니까? 관련된 서브카테고리와 아티클도 영향을 받을 수 있습니다.')) return;
+
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      alert('카테고리가 삭제되었습니다.');
+      loadCategories();
+    } catch (error) {
+      console.error('카테고리 삭제 오류:', error);
+      alert('카테고리 삭제에 실패했습니다.');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -2158,11 +2487,107 @@ const CategoriesContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) =>
     );
   }
 
+  if (showEditor) {
+    return (
+      <div>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className={`text-2xl font-bold ${textClass}`}>
+            {editingCategory ? '카테고리 수정' : '새 카테고리 추가'}
+          </h2>
+          <button
+            onClick={() => setShowEditor(false)}
+            className="text-gray-500 hover:text-gray-700 px-4 py-2"
+          >
+            취소
+          </button>
+        </div>
+
+        <div className={`${cardClass} rounded-lg border p-6 space-y-4`}>
+          <div>
+            <label className={`block text-sm font-medium ${textClass} mb-2`}>
+              카테고리 이름 *
+            </label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+              placeholder="예: 패션"
+            />
+          </div>
+
+          <div>
+            <label className={`block text-sm font-medium ${textClass} mb-2`}>
+              슬러그 (URL용) *
+            </label>
+            <input
+              type="text"
+              value={formData.slug}
+              onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+              className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+              placeholder="예: fashion"
+            />
+            <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-500'} mt-1`}>
+              영문 소문자, 숫자, 하이픈만 사용
+            </p>
+          </div>
+
+          <div>
+            <label className={`block text-sm font-medium ${textClass} mb-2`}>
+              설명
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+              rows={3}
+              placeholder="카테고리 설명"
+            />
+          </div>
+
+          <div>
+            <label className={`block text-sm font-medium ${textClass} mb-2`}>
+              정렬 순서
+            </label>
+            <input
+              type="number"
+              value={formData.order_index}
+              onChange={(e) => setFormData({ ...formData, order_index: e.target.value })}
+              className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+              placeholder="0"
+            />
+            <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-500'} mt-1`}>
+              낮은 숫자가 먼저 표시됩니다
+            </p>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button
+              onClick={handleSave}
+              className="flex-1 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              {editingCategory ? '수정' : '등록'}
+            </button>
+            <button
+              onClick={() => setShowEditor(false)}
+              className={`flex-1 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} ${textClass} px-4 py-2 rounded-lg hover:opacity-80 transition-opacity`}
+            >
+              취소
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className={`text-2xl font-bold ${textClass}`}>카테고리 관리</h2>
-        <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+        <button
+          onClick={handleNew}
+          className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+        >
           새 카테고리 추가
         </button>
       </div>
@@ -2190,10 +2615,16 @@ const CategoriesContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) =>
                   )}
                 </div>
                 <div className="flex gap-2">
-                  <button className="text-blue-600 hover:text-blue-700 px-3 py-1 rounded">
+                  <button
+                    onClick={() => handleEdit(category)}
+                    className="text-blue-600 hover:text-blue-700 px-3 py-1 rounded"
+                  >
                     수정
                   </button>
-                  <button className="text-red-600 hover:text-red-700 px-3 py-1 rounded">
+                  <button
+                    onClick={() => handleDelete(category.id)}
+                    className="text-red-600 hover:text-red-700 px-3 py-1 rounded"
+                  >
                     삭제
                   </button>
                 </div>
@@ -2229,9 +2660,21 @@ const CategoriesContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) =>
 const MediaContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
   const [media, setMedia] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showEditor, setShowEditor] = useState(false);
+  const [formData, setFormData] = useState({
+    filename: '',
+    original_name: '',
+    file_path: '',
+    mime_type: 'image/jpeg',
+    alt_text: '',
+    caption: '',
+  });
 
   const textClass = isDarkMode ? 'text-gray-100' : 'text-gray-900';
   const cardClass = isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
+  const inputClass = isDarkMode
+    ? 'bg-gray-700 border-gray-600 text-white'
+    : 'bg-white border-gray-300 text-gray-900';
 
   React.useEffect(() => {
     loadMedia();
@@ -2243,7 +2686,7 @@ const MediaContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
       const { data, error } = await supabase
         .from('media')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false});
 
       if (error) throw error;
       setMedia(data || []);
@@ -2251,6 +2694,66 @@ const MediaContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
       console.error('미디어 로드 오류:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleNew = () => {
+    setFormData({
+      filename: '',
+      original_name: '',
+      file_path: '',
+      mime_type: 'image/jpeg',
+      alt_text: '',
+      caption: '',
+    });
+    setShowEditor(true);
+  };
+
+  const handleSave = async () => {
+    if (!formData.filename.trim() || !formData.file_path.trim()) {
+      alert('파일명과 URL은 필수입니다.');
+      return;
+    }
+
+    try {
+      const mediaData = {
+        filename: formData.filename.trim(),
+        original_name: formData.original_name.trim() || formData.filename.trim(),
+        file_path: formData.file_path.trim(),
+        mime_type: formData.mime_type,
+        alt_text: formData.alt_text.trim() || null,
+        caption: formData.caption.trim() || null,
+      };
+
+      const { error } = await supabase
+        .from('media')
+        .insert([mediaData]);
+
+      if (error) throw error;
+      alert('미디어가 등록되었습니다.');
+      setShowEditor(false);
+      loadMedia();
+    } catch (error) {
+      console.error('미디어 저장 오류:', error);
+      alert('미디어 저장에 실패했습니다.');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('정말 삭제하시겠습니까?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('media')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      alert('미디어가 삭제되었습니다.');
+      loadMedia();
+    } catch (error) {
+      console.error('미디어 삭제 오류:', error);
+      alert('미디어 삭제에 실패했습니다.');
     }
   };
 
@@ -2262,11 +2765,130 @@ const MediaContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
     );
   }
 
+  if (showEditor) {
+    return (
+      <div>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className={`text-2xl font-bold ${textClass}`}>파일 업로드</h2>
+          <button
+            onClick={() => setShowEditor(false)}
+            className="text-gray-500 hover:text-gray-700 px-4 py-2"
+          >
+            취소
+          </button>
+        </div>
+
+        <div className={`${cardClass} rounded-lg border p-6 space-y-4`}>
+          <div>
+            <label className={`block text-sm font-medium ${textClass} mb-2`}>
+              파일명 *
+            </label>
+            <input
+              type="text"
+              value={formData.filename}
+              onChange={(e) => setFormData({ ...formData, filename: e.target.value })}
+              className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+              placeholder="image.jpg"
+            />
+          </div>
+
+          <div>
+            <label className={`block text-sm font-medium ${textClass} mb-2`}>
+              원본 파일명
+            </label>
+            <input
+              type="text"
+              value={formData.original_name}
+              onChange={(e) => setFormData({ ...formData, original_name: e.target.value })}
+              className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+              placeholder="비어있으면 파일명 사용"
+            />
+          </div>
+
+          <div>
+            <label className={`block text-sm font-medium ${textClass} mb-2`}>
+              파일 URL *
+            </label>
+            <input
+              type="text"
+              value={formData.file_path}
+              onChange={(e) => setFormData({ ...formData, file_path: e.target.value })}
+              className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+              placeholder="https://example.com/image.jpg"
+            />
+          </div>
+
+          <div>
+            <label className={`block text-sm font-medium ${textClass} mb-2`}>
+              MIME 타입
+            </label>
+            <select
+              value={formData.mime_type}
+              onChange={(e) => setFormData({ ...formData, mime_type: e.target.value })}
+              className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+            >
+              <option value="image/jpeg">JPEG 이미지</option>
+              <option value="image/png">PNG 이미지</option>
+              <option value="image/gif">GIF 이미지</option>
+              <option value="image/webp">WebP 이미지</option>
+              <option value="video/mp4">MP4 비디오</option>
+              <option value="application/pdf">PDF 문서</option>
+            </select>
+          </div>
+
+          <div>
+            <label className={`block text-sm font-medium ${textClass} mb-2`}>
+              대체 텍스트 (alt)
+            </label>
+            <input
+              type="text"
+              value={formData.alt_text}
+              onChange={(e) => setFormData({ ...formData, alt_text: e.target.value })}
+              className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+              placeholder="이미지 설명"
+            />
+          </div>
+
+          <div>
+            <label className={`block text-sm font-medium ${textClass} mb-2`}>
+              캡션
+            </label>
+            <input
+              type="text"
+              value={formData.caption}
+              onChange={(e) => setFormData({ ...formData, caption: e.target.value })}
+              className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+              placeholder="이미지 캡션"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button
+              onClick={handleSave}
+              className="flex-1 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              등록
+            </button>
+            <button
+              onClick={() => setShowEditor(false)}
+              className={`flex-1 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} ${textClass} px-4 py-2 rounded-lg hover:opacity-80 transition-opacity`}
+            >
+              취소
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className={`text-2xl font-bold ${textClass}`}>미디어 라이브러리</h2>
-        <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+        <button
+          onClick={handleNew}
+          className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+        >
           파일 업로드
         </button>
       </div>
@@ -2305,10 +2927,10 @@ const MediaContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
                   </p>
                 )}
                 <div className="flex gap-2 mt-3">
-                  <button className="flex-1 text-xs text-blue-600 hover:text-blue-700 py-1">
-                    수정
-                  </button>
-                  <button className="flex-1 text-xs text-red-600 hover:text-red-700 py-1">
+                  <button
+                    onClick={() => handleDelete(item.id)}
+                    className="flex-1 text-xs text-red-600 hover:text-red-700 py-1"
+                  >
                     삭제
                   </button>
                 </div>
