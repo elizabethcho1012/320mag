@@ -37,12 +37,12 @@ const queryClient = new QueryClient({
       // Chrome 프로필별 캐시 문제 방지
       refetchOnMount: true,
       refetchOnReconnect: true,
-      // 무한 로딩 방지를 위한 네트워크 타임아웃 설정
-      networkMode: 'online',
+      // networkMode를 'always'로 변경 - online/offline 상태와 무관하게 쿼리 실행
+      networkMode: 'always',
     },
     mutations: {
       retry: 1,
-      networkMode: 'online',
+      networkMode: 'always',
     },
   },
 });
