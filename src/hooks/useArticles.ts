@@ -52,31 +52,35 @@ export const usePublishedArticles = () => {
   return useQuery({
     queryKey: ['articles', 'published'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('articles')
-        .select(`
-          *,
-          categories(name, slug),
-          subcategories(name, slug),
-          creators(name, profession, verified),
-          editors(name, profession, verified)
-        `)
-        .eq('status', 'published')
-        .order('published_at', { ascending: false });
+      try {
+        const { data, error } = await supabase
+          .from('articles')
+          .select(`
+            *,
+            categories(name, slug),
+            subcategories(name, slug),
+            creators(name, profession, verified),
+            editors(name, profession, verified)
+          `)
+          .eq('status', 'published')
+          .order('published_at', { ascending: false });
 
-      if (error) {
-        console.error('Published articles 쿼리 오류:', error);
-        // 에러를 throw하지 않고 빈 배열 반환 (앱이 계속 작동하도록)
+        if (error) {
+          console.error('Published articles 쿼리 오류:', error);
+          return [];
+        }
+
+        console.log('Published articles 조회 성공:', data?.length, '개');
+        return data || [];
+      } catch (error: any) {
+        // Timeout이나 Abort 에러 발생 시 빈 배열 반환
+        console.error('usePublishedArticles 네트워크 에러 (timeout 가능):', error.message || error);
         return [];
       }
-
-      console.log('Published articles 조회 성공:', data?.length, '개');
-      return data || [];
     },
     retry: 0,
     staleTime: 30 * 1000,
     gcTime: 2 * 60 * 1000,
-    // Timeout 등의 네트워크 에러 시에도 빈 배열로 계속 진행
     throwOnError: false,
   });
 };
@@ -124,26 +128,31 @@ export const useFeaturedArticles = () => {
   return useQuery({
     queryKey: ['articles', 'featured'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('articles')
-        .select(`
-          *,
-          categories(name, slug),
-          subcategories(name, slug),
-          creators(name, profession)
-        `)
-        .eq('status', 'published')
-        .eq('featured', true)
-        .order('published_at', { ascending: false })
-        .limit(5);
+      try {
+        const { data, error } = await supabase
+          .from('articles')
+          .select(`
+            *,
+            categories(name, slug),
+            subcategories(name, slug),
+            creators(name, profession)
+          `)
+          .eq('status', 'published')
+          .eq('featured', true)
+          .order('published_at', { ascending: false })
+          .limit(5);
 
-      if (error) {
-        console.error('Featured articles 쿼리 오류:', error);
+        if (error) {
+          console.error('Featured articles 쿼리 오류:', error);
+          return [];
+        }
+
+        console.log('Featured articles 조회 성공:', data?.length, '개');
+        return data || [];
+      } catch (error: any) {
+        console.error('useFeaturedArticles 네트워크 에러 (timeout 가능):', error.message || error);
         return [];
       }
-
-      console.log('Featured articles 조회 성공:', data?.length, '개');
-      return data || [];
     },
     retry: 0,
     staleTime: 30 * 1000,
