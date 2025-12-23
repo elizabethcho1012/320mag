@@ -30,20 +30,8 @@ const HomePage: React.FC<HomePageProps> = ({ onArticleClick, isDarkMode, highCon
       ? 'bg-white'
       : 'bg-gray-50';
 
-  // 로딩 타임아웃 체크
-  const [showContent, setShowContent] = useState(false);
-
-  useEffect(() => {
-    // 2초 후에는 무조건 콘텐츠 표시
-    const timer = setTimeout(() => {
-      setShowContent(true);
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  // 로딩 상태 - 2초 안에만 표시
-  if ((articlesLoading || featuredLoading) && !showContent) {
+  // 로딩 상태 표시
+  if (articlesLoading || featuredLoading) {
     return (
       <div className={`${bgClass} transition-colors duration-300 min-h-screen flex items-center justify-center`}>
         <div className="text-center">

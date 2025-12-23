@@ -1620,9 +1620,27 @@ const RichEditor: React.FC<{
 const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
   const [events, setEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showEditor, setShowEditor] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<any | null>(null);
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    event_type: 'online' as 'online' | 'offline' | 'hybrid',
+    start_date: '',
+    end_date: '',
+    location: '',
+    max_participants: '',
+    registration_deadline: '',
+    registration_fee: '0',
+    featured_image_url: '',
+    status: 'upcoming' as 'upcoming' | 'ongoing' | 'completed' | 'cancelled',
+  });
 
   const textClass = isDarkMode ? 'text-gray-100' : 'text-gray-900';
   const cardClass = isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
+  const inputClass = isDarkMode
+    ? 'bg-gray-700 border-gray-600 text-white'
+    : 'bg-white border-gray-300 text-gray-900';
 
   React.useEffect(() => {
     loadEvents();
@@ -1645,6 +1663,106 @@ const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
     }
   };
 
+  const handleNew = () => {
+    setEditingEvent(null);
+    setFormData({
+      title: '',
+      description: '',
+      event_type: 'online',
+      start_date: '',
+      end_date: '',
+      location: '',
+      max_participants: '',
+      registration_deadline: '',
+      registration_fee: '0',
+      featured_image_url: '',
+      status: 'upcoming',
+    });
+    setShowEditor(true);
+  };
+
+  const handleEdit = (event: any) => {
+    setEditingEvent(event);
+    setFormData({
+      title: event.title,
+      description: event.description || '',
+      event_type: event.event_type,
+      start_date: event.start_date ? event.start_date.substring(0, 16) : '',
+      end_date: event.end_date ? event.end_date.substring(0, 16) : '',
+      location: event.location || '',
+      max_participants: event.max_participants?.toString() || '',
+      registration_deadline: event.registration_deadline ? event.registration_deadline.substring(0, 16) : '',
+      registration_fee: event.registration_fee?.toString() || '0',
+      featured_image_url: event.featured_image_url || '',
+      status: event.status,
+    });
+    setShowEditor(true);
+  };
+
+  const handleSave = async () => {
+    if (!formData.title.trim() || !formData.start_date) {
+      alert('제목과 시작일은 필수입니다.');
+      return;
+    }
+
+    try {
+      const eventData = {
+        title: formData.title.trim(),
+        description: formData.description.trim() || null,
+        event_type: formData.event_type,
+        start_date: formData.start_date,
+        end_date: formData.end_date || null,
+        location: formData.location.trim() || null,
+        max_participants: formData.max_participants ? parseInt(formData.max_participants) : null,
+        registration_deadline: formData.registration_deadline || null,
+        registration_fee: parseInt(formData.registration_fee) || 0,
+        featured_image_url: formData.featured_image_url.trim() || null,
+        status: formData.status,
+      };
+
+      if (editingEvent) {
+        const { error } = await supabase
+          .from('events')
+          .update(eventData)
+          .eq('id', editingEvent.id);
+
+        if (error) throw error;
+        alert('이벤트가 수정되었습니다.');
+      } else {
+        const { error } = await supabase
+          .from('events')
+          .insert([eventData]);
+
+        if (error) throw error;
+        alert('이벤트가 등록되었습니다.');
+      }
+
+      setShowEditor(false);
+      loadEvents();
+    } catch (error) {
+      console.error('이벤트 저장 오류:', error);
+      alert('이벤트 저장에 실패했습니다.');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('정말 삭제하시겠습니까?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      alert('이벤트가 삭제되었습니다.');
+      loadEvents();
+    } catch (error) {
+      console.error('이벤트 삭제 오류:', error);
+      alert('이벤트 삭제에 실패했습니다.');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -1653,11 +1771,200 @@ const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
     );
   }
 
+  if (showEditor) {
+    return (
+      <div>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className={`text-2xl font-bold ${textClass}`}>
+            {editingEvent ? '이벤트 수정' : '새 이벤트 등록'}
+          </h2>
+          <button
+            onClick={() => setShowEditor(false)}
+            className="text-gray-500 hover:text-gray-700 px-4 py-2"
+          >
+            취소
+          </button>
+        </div>
+
+        <div className={`${cardClass} rounded-lg border p-6 space-y-4`}>
+          <div>
+            <label className={`block text-sm font-medium ${textClass} mb-2`}>
+              제목 *
+            </label>
+            <input
+              type="text"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+              placeholder="이벤트 제목"
+            />
+          </div>
+
+          <div>
+            <label className={`block text-sm font-medium ${textClass} mb-2`}>
+              설명
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+              rows={4}
+              placeholder="이벤트 설명"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                이벤트 유형
+              </label>
+              <select
+                value={formData.event_type}
+                onChange={(e) => setFormData({ ...formData, event_type: e.target.value as any })}
+                className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+              >
+                <option value="online">온라인</option>
+                <option value="offline">오프라인</option>
+                <option value="hybrid">하이브리드</option>
+              </select>
+            </div>
+
+            <div>
+              <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                상태
+              </label>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+              >
+                <option value="upcoming">예정</option>
+                <option value="ongoing">진행중</option>
+                <option value="completed">완료</option>
+                <option value="cancelled">취소</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                시작일시 *
+              </label>
+              <input
+                type="datetime-local"
+                value={formData.start_date}
+                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+              />
+            </div>
+
+            <div>
+              <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                종료일시
+              </label>
+              <input
+                type="datetime-local"
+                value={formData.end_date}
+                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className={`block text-sm font-medium ${textClass} mb-2`}>
+              장소
+            </label>
+            <input
+              type="text"
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+              placeholder="이벤트 장소"
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                최대 참가자 수
+              </label>
+              <input
+                type="number"
+                value={formData.max_participants}
+                onChange={(e) => setFormData({ ...formData, max_participants: e.target.value })}
+                className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+                placeholder="100"
+              />
+            </div>
+
+            <div>
+              <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                참가비 (원)
+              </label>
+              <input
+                type="number"
+                value={formData.registration_fee}
+                onChange={(e) => setFormData({ ...formData, registration_fee: e.target.value })}
+                className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+                placeholder="0"
+              />
+            </div>
+
+            <div>
+              <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                등록 마감일
+              </label>
+              <input
+                type="datetime-local"
+                value={formData.registration_deadline}
+                onChange={(e) => setFormData({ ...formData, registration_deadline: e.target.value })}
+                className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className={`block text-sm font-medium ${textClass} mb-2`}>
+              대표 이미지 URL
+            </label>
+            <input
+              type="text"
+              value={formData.featured_image_url}
+              onChange={(e) => setFormData({ ...formData, featured_image_url: e.target.value })}
+              className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+              placeholder="https://example.com/image.jpg"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button
+              onClick={handleSave}
+              className="flex-1 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              {editingEvent ? '수정' : '등록'}
+            </button>
+            <button
+              onClick={() => setShowEditor(false)}
+              className={`flex-1 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} ${textClass} px-4 py-2 rounded-lg hover:opacity-80 transition-opacity`}
+            >
+              취소
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className={`text-2xl font-bold ${textClass}`}>이벤트 관리</h2>
-        <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+        <button
+          onClick={handleNew}
+          className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+        >
           새 이벤트 등록
         </button>
       </div>
@@ -1691,10 +1998,16 @@ const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
                   </div>
                 </div>
                 <div className="flex gap-2 ml-4">
-                  <button className="text-blue-600 hover:text-blue-700 px-3 py-1 rounded">
+                  <button
+                    onClick={() => handleEdit(event)}
+                    className="text-blue-600 hover:text-blue-700 px-3 py-1 rounded"
+                  >
                     수정
                   </button>
-                  <button className="text-red-600 hover:text-red-700 px-3 py-1 rounded">
+                  <button
+                    onClick={() => handleDelete(event.id)}
+                    className="text-red-600 hover:text-red-700 px-3 py-1 rounded"
+                  >
                     삭제
                   </button>
                 </div>

@@ -36,6 +36,12 @@ const queryClient = new QueryClient({
       // Chrome 프로필별 캐시 문제 방지
       refetchOnMount: true,
       refetchOnReconnect: true,
+      // 무한 로딩 방지를 위한 네트워크 타임아웃 설정
+      networkMode: 'online',
+    },
+    mutations: {
+      retry: 1,
+      networkMode: 'online',
     },
   },
 });
