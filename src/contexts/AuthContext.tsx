@@ -267,7 +267,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } finally {
         if (isMounted) {
           authInitialized = true;
+          console.log('🔵 AuthContext finally: Setting loading to false');
           setLoading(false);
+          console.log('🔵 AuthContext finally: setLoading(false) called');
         }
       }
     };
@@ -275,8 +277,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // 무한 로딩 방지용 타임아웃 (3초 후 강제로 loading 해제)
     const timeoutId = setTimeout(() => {
       if (isMounted && !authInitialized) {
-        console.warn('Auth initialization timeout - forcing loading to false');
+        console.warn('⚠️ Auth initialization timeout - forcing loading to false');
+        console.log('🔴 AuthContext timeout: isMounted:', isMounted, 'authInitialized:', authInitialized);
         setLoading(false);
+        console.log('🔴 AuthContext timeout: setLoading(false) called');
       }
     }, 3000);
 
@@ -305,6 +309,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         if (isMounted) {
+          console.log('🟢 AuthContext onAuthStateChange: Setting loading to false');
           setLoading(false);
         }
       }
@@ -329,6 +334,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isAdmin: profile?.role === 'admin',
     isSubscriber: profile?.role === 'subscriber' || profile?.role === 'admin',
   };
+
+  console.log('🟡 AuthContext: Creating context value with loading:', loading);
 
   return (
     <AuthContext.Provider value={value}>

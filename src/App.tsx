@@ -76,8 +76,11 @@ const AppContent: React.FC = () => {
   // Supabase Auth 연동
   const { profile, isAdmin, loading } = useAuth();
 
+  console.log('🔶 App.tsx: Received loading from useAuth:', loading);
+
   // 로딩 중이면 로딩 화면 표시
   if (loading) {
+    console.log('🔶 App.tsx: Showing loading screen because loading =', loading);
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -87,6 +90,8 @@ const AppContent: React.FC = () => {
       </div>
     );
   }
+
+  console.log('🔶 App.tsx: Rendering main content, loading =', loading);
 
   const handleArticleClick = (articleId: number | string) => {
     setSelectedArticleId(typeof articleId === 'number' ? articleId.toString() : articleId);
