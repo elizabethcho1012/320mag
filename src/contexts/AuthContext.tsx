@@ -213,62 +213,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     console.log('🔷 AuthContext: useEffect 시작');
 
-    // 현재 세션 확인 (timeout 포함)
-    const sessionCheckPromise = Promise.race([
-      supabase.auth.getSession(),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('getSession timeout')), 800)
-      )
-    ]);
-
-    sessionCheckPromise.then((result: any) => {
-      if (!isMounted || isInitialized) return;
-
-      const currentSession = result?.data?.session;
-
-      if (currentSession?.user) {
-        console.log('🔷 Current session found:', currentSession.user.email);
-        setSession(currentSession);
-        setUser(currentSession.user);
-
-        // 프로필 조회 (백그라운드)
-        fetchProfile(currentSession.user.id).then(async (userProfile) => {
-          if (!isMounted) return;
-          if (!userProfile && currentSession.user.email) {
-            const username = currentSession.user.user_metadata?.username ||
-                           currentSession.user.email.split('@')[0];
-            userProfile = await createProfile(
-              currentSession.user.id,
-              currentSession.user.email,
-              username
-            );
-          }
-          if (isMounted) {
-            setProfile(userProfile);
-            console.log('🔷 Profile loaded from current session');
-          }
-        }).catch(err => console.error('프로필 조회/생성 실패:', err));
-      } else {
-        console.log('🔷 No current session');
-        setSession(null);
-        setUser(null);
-        setProfile(null);
-      }
-
-      isInitialized = true;
-      setLoading(false);
-      console.log('✅ Current session check complete, loading=false');
-    }).catch((error) => {
-      console.error('❌ Session check error/timeout:', error.message);
-      if (isMounted && !isInitialized) {
-        // getSession 실패해도 진행 (auth 이벤트로 복구 가능)
-        isInitialized = true;
-        setLoading(false);
-        console.log('⚠️ Session check failed but continuing');
-      }
-    });
-
-    // 인증 상태 변화 구독
+    // 인증 상태 변화 구독 (INITIAL_SESSION이 가장 먼저 실행됨)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
         console.log('🔔 Auth event:', event, 'session:', !!currentSession);
@@ -278,9 +223,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
 
-        // INITIAL_SESSION 처리 (앱 시작 시)
+        // INITIAL_SESSION 처리 (앱 시작/새로고침 시 가장 먼저 발생)
         if (event === 'INITIAL_SESSION') {
           console.log('🔔 INITIAL_SESSION - processing');
+
           if (currentSession?.user) {
             console.log('🔔 User found in INITIAL_SESSION:', currentSession.user.email);
             setSession(currentSession);
@@ -319,7 +265,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
 
-        // SIGNED_IN 이벤트 처리 (로그인 후 or 앱 시작 시)
+        // SIGNED_IN 이벤트 처리 (로그인 후)
         if (event === 'SIGNED_IN' && currentSession?.user) {
           console.log('🔔 SIGNED_IN event - updating user and profile');
           setSession(currentSession);
@@ -362,6 +308,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // TOKEN_REFRESHED 처리
         if (event === 'TOKEN_REFRESHED' && currentSession?.user) {
+          console.log('🔔 TOKEN_REFRESHED - updating session');
           setSession(currentSession);
           setUser(currentSession.user);
 
