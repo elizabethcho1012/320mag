@@ -18,6 +18,8 @@ const HomePage: React.FC<HomePageProps> = ({ onArticleClick, isDarkMode, highCon
   const { data: homepageSettings } = useHomepageSettings() as { data: HomepageSettings | undefined };
 
   // Supabase에서 실제 데이터 가져오기
+  // isLoading: 초기 로딩만 (데이터 없을 때만 true)
+  // isFetching: 백그라운드 refetch 포함 (깜빡임 방지를 위해 사용 안함)
   const { data: dbArticles = [], isLoading: articlesLoading, error: articlesError } = usePublishedArticles();
   const { data: dbFeaturedArticles = [], isLoading: featuredLoading } = useFeaturedArticles();
   const { data: dbCreators = [] } = useCreators();
@@ -28,14 +30,8 @@ const HomePage: React.FC<HomePageProps> = ({ onArticleClick, isDarkMode, highCon
   // 슬라이드용 이벤트 가져오기
   const { data: featuredEvents = [] } = useFeaturedEvents();
 
-  // 디버그 로그
-  console.log('HomePage 렌더링:', {
-    articlesLoading,
-    featuredLoading,
-    articlesCount: dbArticles.length,
-    featuredCount: dbFeaturedArticles.length,
-    hasError: !!articlesError
-  });
+  // 초기 로딩만 표시 (캐시된 데이터가 있으면 로딩 화면 안 보여줌)
+  const isInitialLoading = (articlesLoading && dbArticles.length === 0) || (featuredLoading && dbFeaturedArticles.length === 0);
 
   const bgClass = isDarkMode
     ? 'bg-gray-900'
@@ -43,8 +39,8 @@ const HomePage: React.FC<HomePageProps> = ({ onArticleClick, isDarkMode, highCon
       ? 'bg-white'
       : 'bg-gray-50';
 
-  // 로딩 상태 표시
-  if (articlesLoading || featuredLoading) {
+  // 로딩 상태 표시 (초기 로딩만, 캐시된 데이터 있으면 바로 렌더링)
+  if (isInitialLoading) {
     return (
       <div className={`${bgClass} transition-colors duration-300 min-h-screen flex items-center justify-center`}>
         <div className="text-center">

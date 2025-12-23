@@ -293,24 +293,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (!isMounted) return;
 
-        if (currentSession?.user) {
-          setSession(currentSession);
-          setUser(currentSession.user);
-
-          // 프로필 조회
-          const userProfile = await fetchProfile(currentSession.user.id);
-          if (isMounted) {
-            setProfile(userProfile);
-          }
-        } else {
-          setSession(null);
-          setUser(null);
-          setProfile(null);
+        // INITIAL_SESSION 이벤트는 무시 (initializeAuth에서 이미 처리됨)
+        if (event === 'INITIAL_SESSION') {
+          return;
         }
 
-        if (isMounted) {
-          console.log('🟢 AuthContext onAuthStateChange: Setting loading to false');
-          setLoading(false);
+        if (currentSession?.user) {
+          // 프로필 조회
+          const userProfile = await fetchProfile(currentSession.user.id);
+
+          // 한 번에 모든 상태 업데이트 (리렌더링 최소화)
+          if (isMounted) {
+            setSession(currentSession);
+            setUser(currentSession.user);
+            setProfile(userProfile);
+            console.log('🟢 AuthContext onAuthStateChange: Auth state updated');
+          }
+        } else {
+          // 로그아웃 시
+          if (isMounted) {
+            setSession(null);
+            setUser(null);
+            setProfile(null);
+            console.log('🟢 AuthContext onAuthStateChange: User logged out');
+          }
         }
       }
     );
