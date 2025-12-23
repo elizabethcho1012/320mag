@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
@@ -11,7 +11,6 @@ import CategoryPage from './pages/CategoryPage';
 import CreatorsPage from './pages/CreatorsPage';
 import EventsPage from './pages/EventsPage';
 import ChallengesPage from './pages/ChallengesPage';
-import AdminPage from './pages/AdminPage';
 import ArticleDetailPage from './pages/ArticleDetailPage';
 import SearchResultsPage from './pages/SearchResultsPage';
 import SubscriptionPage from './pages/SubscriptionPage';
@@ -23,8 +22,13 @@ import WebAppsPage from './pages/WebAppsPage';
 import MyPage from './pages/MyPage';
 import PWAAppsPage from './pages/pwa/PWAAppsPage';
 import PWAAppDetailPage from './pages/pwa/PWAAppDetailPage';
+import PWAMyAppsPage from './pages/pwa/PWAMyAppsPage';
+import PWAAdminPage from './pages/pwa/PWAAdminPage';
 import InitialAdPopup from './components/InitialAdPopup';
 import PWAUpdatePrompt from './components/PWAUpdatePrompt';
+
+// 관리자 페이지는 lazy loading (일반 사용자는 거의 접속 안함)
+const AdminPage = lazy(() => import('./pages/AdminPage'));
 
 // React Query 클라이언트 생성
 const queryClient = new QueryClient({
@@ -167,16 +171,22 @@ const AppContent: React.FC = () => {
         if (!isAdmin) {
           return <HomePage {...pageProps} />;
         }
-        return <AdminPage
-          isDarkMode={isDarkMode}
-          onBack={() => setCurrentPage('home')}
-          currentUser={profile ? {
-            id: profile.id,
-            username: profile.username,
-            role: profile.role,
-            email: profile.email
-          } : null}
-        />;
+        return (
+          <Suspense fallback={<div className="min-h-screen flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+          </div>}>
+            <AdminPage
+              isDarkMode={isDarkMode}
+              onBack={() => setCurrentPage('home')}
+              currentUser={profile ? {
+                id: profile.id,
+                username: profile.username,
+                role: profile.role,
+                email: profile.email
+              } : null}
+            />
+          </Suspense>
+        );
       case 'mypage':
         return <MyPage isDarkMode={isDarkMode} onBack={() => setCurrentPage('home')} />;
       case 'subscription':
@@ -193,6 +203,14 @@ const AppContent: React.FC = () => {
         return <WebAppsPage isDarkMode={isDarkMode} onBack={() => setCurrentPage('home')} />;
       case 'apps':
         return <PWAAppsPage />;
+      case 'my-pwa-apps':
+        return <PWAMyAppsPage onNavigateToSubmit={() => setCurrentPage('apps')} />;
+      case 'pwa-admin':
+        // 관리자만 접근 가능
+        if (!isAdmin) {
+          return <HomePage {...pageProps} />;
+        }
+        return <PWAAdminPage />;
       case 'fashion':
         return <CategoryPage category="패션" onArticleClick={handleArticleClick} isDarkMode={isDarkMode} />;
       case 'beauty':

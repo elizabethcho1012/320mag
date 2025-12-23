@@ -4,6 +4,7 @@ import AdBannerSlider from '../components/AdBannerSlider';
 import { usePublishedArticles, useFeaturedArticles, useCreators } from '../hooks/useArticles';
 import { useHomepageSettings, type HomepageSettings } from '../hooks/useHomepageSettings';
 import { useAdvertisementsByCategory } from '../hooks/useAdvertisements';
+import { useFeaturedEvents } from '../hooks/useEvents';
 
 interface HomePageProps {
   onArticleClick: (id: number | string) => void;
@@ -23,6 +24,9 @@ const HomePage: React.FC<HomePageProps> = ({ onArticleClick, isDarkMode, highCon
 
   // 슬라이드용 광고 가져오기
   const { data: slideAds = [] } = useAdvertisementsByCategory(null, 'inline');
+
+  // 슬라이드용 이벤트 가져오기
+  const { data: featuredEvents = [] } = useFeaturedEvents();
 
   // 디버그 로그
   console.log('HomePage 렌더링:', {
@@ -155,13 +159,34 @@ const HomePage: React.FC<HomePageProps> = ({ onArticleClick, isDarkMode, highCon
     linkUrl: ad.link_url
   });
 
+  // 이벤트를 슬라이드 아이템으로 변환
+  const transformEvent = (event: any) => ({
+    id: `event-${event.id}`,
+    title: event.title,
+    excerpt: event.description || '',
+    image: event.featured_image_url || null, // null이면 기본 디자인 사용
+    subcategory: 'EVENT',
+    category: 'event',
+    creator: '',
+    publishedAt: event.start_date,
+    isEvent: true,
+    eventId: event.id,
+    location: event.location,
+    startDate: event.start_date
+  });
+
   // 슬라이드용 광고 준비
   const adSlides = homepageSettings && slideAds && slideAds.length > 0
     ? slideAds.slice(0, homepageSettings.ad_slides).map(transformAd)
     : [];
 
-  // 기사와 광고를 섞어서 최종 슬라이드 구성
-  const featuredArticles = [...slideArticles, ...adSlides]
+  // 슬라이드용 이벤트 준비 (최대 2개)
+  const eventSlides = featuredEvents && featuredEvents.length > 0
+    ? featuredEvents.slice(0, 2).map(transformEvent)
+    : [];
+
+  // 기사, 광고, 이벤트를 섞어서 최종 슬라이드 구성
+  const featuredArticles = [...slideArticles, ...adSlides, ...eventSlides]
     .slice(0, homepageSettings?.total_slides || 5);
 
   // 이미 사용된 기사 ID 추적 (중복 방지)
@@ -289,6 +314,7 @@ const HomePage: React.FC<HomePageProps> = ({ onArticleClick, isDarkMode, highCon
           isDarkMode={isDarkMode}
           autoplayEnabled={homepageSettings ? homepageSettings.autoplay_enabled : true}
           autoplayInterval={homepageSettings ? homepageSettings.autoplay_interval : 5000}
+          onNavigate={onNavigate}
         />
 
         {/* 카테고리별 콘텐츠 섹션 */}
@@ -325,7 +351,8 @@ const HeroSlideLocal: React.FC<{
   isDarkMode: boolean;
   autoplayEnabled?: boolean;
   autoplayInterval?: number;
-}> = ({ featuredArticles, onArticleClick, autoplayEnabled = true, autoplayInterval = 5000 }) => {
+  onNavigate?: (page: string) => void;
+}> = ({ featuredArticles, onArticleClick, autoplayEnabled = true, autoplayInterval = 5000, onNavigate }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
@@ -388,31 +415,75 @@ const HeroSlideLocal: React.FC<{
               onClick={() => {
                 if (article.isAd && article.linkUrl) {
                   window.open(article.linkUrl, '_blank', 'noopener,noreferrer');
+                } else if (article.isEvent) {
+                  // 이벤트 클릭 시 이벤트 페이지로 이동
+                  onNavigate?.('events');
                 } else if (!article.isAd) {
                   onArticleClick(article.id);
                 }
               }}
             >
-              <img
-                src={article.image || 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=800&h=600&fit=crop'}
-                alt={article.title}
-                className="w-full h-[500px] object-cover"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=800&h=600&fit=crop';
-                }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-8 pb-16 text-white">
-                <div className="max-w-4xl text-center mx-auto">
-                  <h2 className="text-2xl md:text-3xl font-bold mb-2 leading-tight break-keep">
-                    {article.title}
-                  </h2>
-                  <p className="text-sm md:text-base text-gray-200 leading-relaxed break-keep">
-                    {article.excerpt}
-                  </p>
+              {/* 이벤트이고 이미지가 없는 경우 기본 디자인 배너 */}
+              {article.isEvent && !article.image ? (
+                <div className="w-full h-[500px] bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 flex items-center justify-center p-8">
+                  <div className="max-w-4xl text-center text-white">
+                    <div className="inline-block px-4 py-2 bg-white/20 rounded-full mb-6">
+                      <span className="text-sm font-semibold tracking-wider">EVENT</span>
+                    </div>
+                    <h2 className="text-3xl md:text-5xl font-bold mb-6 leading-tight break-keep">
+                      {article.title}
+                    </h2>
+                    {article.excerpt && (
+                      <p className="text-lg md:text-xl text-purple-100 mb-6 leading-relaxed break-keep">
+                        {article.excerpt}
+                      </p>
+                    )}
+                    <div className="flex flex-col md:flex-row items-center justify-center gap-4 text-sm md:text-base">
+                      {article.startDate && (
+                        <div className="flex items-center gap-2">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span>{new Date(article.startDate).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}</span>
+                        </div>
+                      )}
+                      {article.location && (
+                        <div className="flex items-center gap-2">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          <span>{article.location}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <>
+                  <img
+                    src={article.image || 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=800&h=600&fit=crop'}
+                    alt={article.title}
+                    loading="lazy"
+                    className="w-full h-[500px] object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=800&h=600&fit=crop';
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-8 pb-16 text-white">
+                    <div className="max-w-4xl text-center mx-auto">
+                      <h2 className="text-2xl md:text-3xl font-bold mb-2 leading-tight break-keep">
+                        {article.title}
+                      </h2>
+                      <p className="text-sm md:text-base text-gray-200 leading-relaxed break-keep">
+                        {article.excerpt}
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           ))}
         </div>
@@ -462,6 +533,7 @@ const ContentSectionLocal: React.FC<{
             <img
               src={article.image || 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=400&h=300&fit=crop'}
               alt={article.title}
+              loading="lazy"
               className="w-full h-48 object-contain mb-3 group-hover:opacity-90 transition-opacity rounded-lg bg-gray-100"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;

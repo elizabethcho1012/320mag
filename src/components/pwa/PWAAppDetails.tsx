@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowDownTrayIcon, GlobeAltIcon, ShareIcon, StarIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import { DeviceMockup } from './DeviceMockup';
+import { PWAReportButton } from './PWAReportButton';
 import { useTrackPWADownload } from '@/hooks/useTrackPWADownload';
 import type { PWAApp } from '@/types/pwa.types';
 import { toast } from 'sonner';
@@ -118,6 +119,7 @@ export function PWAAppDetails({ app }: PWAAppDetailsProps) {
           <ShareIcon className="h-5 w-5" />
           Share
         </button>
+        <PWAReportButton appId={app.id} appName={app.name} variant="button" />
       </div>
 
       {/* Installation Guide */}

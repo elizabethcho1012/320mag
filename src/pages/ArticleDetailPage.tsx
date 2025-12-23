@@ -228,7 +228,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({ articleId, onBack
 
         {/* 메인 이미지 */}
         <div className="mb-8">
-          <img
+          <img loading="lazy"
             src={article.featured_image_url || 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=800&h=600&fit=crop'}
             alt={article.title}
             className="w-full h-auto object-cover rounded-lg"
@@ -295,7 +295,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({ articleId, onBack
             <div className="flex items-start space-x-4">
               <div className="w-16 h-16 rounded-full overflow-hidden bg-purple-100 flex-shrink-0">
                 {article.creators.image_url ? (
-                  <img
+                  <img loading="lazy"
                     src={article.creators.image_url}
                     alt={article.creators.name}
                     className="w-full h-full object-cover"
@@ -367,7 +367,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({ articleId, onBack
                     </div>
                     {prevNextData.prev.featured_image_url && (
                       <div className="flex-shrink-0 w-16 h-16 rounded overflow-hidden">
-                        <img
+                        <img loading="lazy"
                           src={prevNextData.prev.featured_image_url}
                           alt={prevNextData.prev.title}
                           className="w-full h-full object-cover"
@@ -395,7 +395,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({ articleId, onBack
                   >
                     {prevNextData.next.featured_image_url && (
                       <div className="flex-shrink-0 w-16 h-16 rounded overflow-hidden">
-                        <img
+                        <img loading="lazy"
                           src={prevNextData.next.featured_image_url}
                           alt={prevNextData.next.title}
                           className="w-full h-full object-cover"
@@ -508,7 +508,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({ articleId, onBack
                   className="cursor-pointer group"
                   onClick={() => onArticleClick(relatedArticle.id)}
                 >
-                  <img
+                  <img loading="lazy"
                     src={relatedArticle.featured_image_url || 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=400&h=300&fit=crop'}
                     alt={relatedArticle.title}
                     className="w-full h-32 object-contain mb-3 group-hover:opacity-90 transition-opacity rounded-lg bg-gray-100"

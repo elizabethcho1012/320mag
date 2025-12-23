@@ -53,21 +53,10 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg}'],
+        // Supabase API는 캐싱하지 않음 (항상 최신 콘텐츠)
+        navigateFallback: null,
         runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'supabase-cache',
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 // 1 day
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          },
+          // 이미지만 캐싱 (성능 최적화)
           {
             urlPattern: /^https:\/\/.*\.(jpg|jpeg|png|gif|webp|svg)$/i,
             handler: 'CacheFirst',
@@ -75,7 +64,7 @@ export default defineConfig(({ mode }) => ({
               cacheName: 'images-cache',
               expiration: {
                 maxEntries: 200,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days (30일 → 7일로 단축)
               },
               cacheableResponse: {
                 statuses: [0, 200]
@@ -92,4 +81,31 @@ export default defineConfig(({ mode }) => ({
     },
     dedupe: ["react", "react-dom"],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // React 관련 라이브러리
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+
+          // Supabase 관련
+          'vendor-supabase': ['@supabase/supabase-js'],
+
+          // TanStack Query
+          'vendor-query': ['@tanstack/react-query'],
+
+          // UI 라이브러리 (Radix UI)
+          'vendor-ui': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-select',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-toast',
+            '@radix-ui/react-tooltip',
+            '@radix-ui/react-slot'
+          ],
+        }
+      }
+    }
+  }
 }));

@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { PWAAppGrid } from '@/components/pwa/PWAAppGrid';
 import { PWAAppFilters } from '@/components/pwa/PWAAppFilters';
 import { PWASubmitForm } from '@/components/pwa/PWASubmitForm';
+import { PWASearchBar } from '@/components/pwa/PWASearchBar';
+import { PWASearchResults } from '@/components/pwa/PWASearchResults';
+import PWAAppDetailPage from './PWAAppDetailPage';
+import { usePWASearch } from '@/hooks/usePWASearch';
 import { PlusCircleIcon } from '@heroicons/react/24/outline';
 import type { PWASortBy } from '@/types/pwa.types';
 
@@ -10,6 +14,7 @@ export default function PWAAppsPage() {
   const [sortBy, setSortBy] = useState<PWASortBy>('newest');
   const [showSubmitForm, setShowSubmitForm] = useState(false);
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
+  const { searchQuery, setSearchQuery, results, isLoading } = usePWASearch();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50">
@@ -45,22 +50,41 @@ export default function PWAAppsPage() {
 
       {/* Apps Section */}
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pb-24">
-        {/* Filters */}
-        <PWAAppFilters
-          category={category}
-          sortBy={sortBy}
-          onCategoryChange={setCategory}
-          onSortChange={setSortBy}
+        {/* Search Bar */}
+        <PWASearchBar
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="Search for apps by name or description..."
         />
 
-        {/* Apps Grid */}
-        <PWAAppGrid
-          filters={{
-            category: category || undefined,
-            sortBy,
-          }}
-          onAppClick={(appId) => setSelectedAppId(appId)}
-        />
+        {/* Show search results if searching, otherwise show filtered grid */}
+        {searchQuery ? (
+          <PWASearchResults
+            results={results}
+            isLoading={isLoading}
+            query={searchQuery}
+            onAppClick={(appId) => setSelectedAppId(appId)}
+          />
+        ) : (
+          <>
+            {/* Filters */}
+            <PWAAppFilters
+              category={category}
+              sortBy={sortBy}
+              onCategoryChange={setCategory}
+              onSortChange={setSortBy}
+            />
+
+            {/* Apps Grid */}
+            <PWAAppGrid
+              filters={{
+                category: category || undefined,
+                sortBy,
+              }}
+              onAppClick={(appId) => setSelectedAppId(appId)}
+            />
+          </>
+        )}
       </div>
 
       {/* Submit Form Modal */}

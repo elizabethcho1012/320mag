@@ -694,6 +694,168 @@ const DashboardContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => 
   );
 };
 
+// Article Editor Form Component
+const ArticleEditorForm: React.FC<{
+  isDarkMode: boolean;
+  categories: any[];
+  editingArticle: any | null;
+  onSave: (data: any) => void;
+  onCancel: () => void;
+}> = ({ isDarkMode, categories, editingArticle, onSave, onCancel }) => {
+  const [formData, setFormData] = useState({
+    title: editingArticle?.title || '',
+    content: editingArticle?.content || '',
+    excerpt: editingArticle?.excerpt || '',
+    category_id: editingArticle?.categories?.id || '',
+    featured_image_url: editingArticle?.featured_image_url || '',
+    status: (editingArticle?.status || 'draft') as 'draft' | 'published',
+  });
+
+  const textClass = isDarkMode ? 'text-gray-100' : 'text-gray-900';
+  const cardClass = isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
+  const inputClass = isDarkMode
+    ? 'bg-gray-700 border-gray-600 text-white'
+    : 'bg-white border-gray-300 text-gray-900';
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.title.trim()) {
+      alert('제목은 필수입니다.');
+      return;
+    }
+
+    if (!formData.content.trim()) {
+      alert('본문 내용은 필수입니다.');
+      return;
+    }
+
+    onSave(formData);
+  };
+
+  return (
+    <div className={`${cardClass} rounded-lg border p-6`}>
+      <div className="flex justify-between items-center mb-6">
+        <h3 className={`text-xl font-bold ${textClass}`}>
+          {editingArticle ? '아티클 수정' : '새 아티클 작성'}
+        </h3>
+        <button
+          onClick={onCancel}
+          className="text-gray-500 hover:text-gray-700 px-4 py-2"
+        >
+          취소
+        </button>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className={`block text-sm font-medium ${textClass} mb-2`}>
+            제목 *
+          </label>
+          <input
+            type="text"
+            value={formData.title}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+            placeholder="아티클 제목"
+            required
+          />
+        </div>
+
+        <div>
+          <label className={`block text-sm font-medium ${textClass} mb-2`}>
+            요약 (Excerpt)
+          </label>
+          <textarea
+            value={formData.excerpt}
+            onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
+            className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+            rows={3}
+            placeholder="아티클 요약 (선택사항)"
+          />
+        </div>
+
+        <div>
+          <label className={`block text-sm font-medium ${textClass} mb-2`}>
+            본문 내용 *
+          </label>
+          <textarea
+            value={formData.content}
+            onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+            className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+            rows={15}
+            placeholder="아티클 본문 내용"
+            required
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={`block text-sm font-medium ${textClass} mb-2`}>
+              카테고리
+            </label>
+            <select
+              value={formData.category_id}
+              onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+              className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+            >
+              <option value="">선택하세요</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className={`block text-sm font-medium ${textClass} mb-2`}>
+              상태
+            </label>
+            <select
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+              className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+            >
+              <option value="draft">임시저장</option>
+              <option value="published">발행</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className={`block text-sm font-medium ${textClass} mb-2`}>
+            대표 이미지 URL
+          </label>
+          <input
+            type="text"
+            value={formData.featured_image_url}
+            onChange={(e) => setFormData({ ...formData, featured_image_url: e.target.value })}
+            className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+            placeholder="https://example.com/image.jpg"
+          />
+        </div>
+
+        <div className="flex gap-3 pt-4">
+          <button
+            type="submit"
+            className="flex-1 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            {editingArticle ? '수정' : '작성'}
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className={`flex-1 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} ${textClass} px-4 py-2 rounded-lg hover:opacity-80 transition-opacity`}
+          >
+            취소
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
 // 2. 아티클 관리 - Supabase 연동 CRUD
 const ArticlesContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
   const [showEditor, setShowEditor] = useState(false);
@@ -891,15 +1053,16 @@ const ArticlesContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
         </div>
       ) : showEditor ? (
-        <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border p-6`}>
-          <p className={textClass}>기사 에디터는 준비 중입니다. Supabase에서 직접 편집하거나 AI 콘텐츠 파이프라인을 사용하세요.</p>
-          <button
-            onClick={() => setShowEditor(false)}
-            className="mt-4 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
-          >
-            닫기
-          </button>
-        </div>
+        <ArticleEditorForm
+          isDarkMode={isDarkMode}
+          categories={categories}
+          editingArticle={editingArticle}
+          onSave={handleSaveArticle}
+          onCancel={() => {
+            setShowEditor(false);
+            setEditingArticle(null);
+          }}
+        />
       ) : (
         <div>
           <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border p-6 mb-6`}>
@@ -1622,6 +1785,7 @@ const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [showEditor, setShowEditor] = useState(false);
   const [editingEvent, setEditingEvent] = useState<any | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -1700,6 +1864,8 @@ const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
   };
 
   const handleSave = async () => {
+    console.log('handleSave 호출됨, formData:', formData);
+
     if (!formData.title.trim() || !formData.start_date) {
       alert('제목과 시작일은 필수입니다.');
       return;
@@ -1719,6 +1885,8 @@ const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
         featured_image_url: formData.featured_image_url.trim() || null,
         status: formData.status,
       };
+
+      console.log('저장할 데이터:', eventData);
 
       if (editingEvent) {
         const { error } = await supabase
@@ -1760,6 +1928,56 @@ const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
     } catch (error) {
       console.error('이벤트 삭제 오류:', error);
       alert('이벤트 삭제에 실패했습니다.');
+    }
+  };
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // 파일 크기 체크 (5MB 제한)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('파일 크기는 5MB 이하여야 합니다.');
+      return;
+    }
+
+    // 이미지 파일 타입 체크
+    if (!file.type.startsWith('image/')) {
+      alert('이미지 파일만 업로드 가능합니다.');
+      return;
+    }
+
+    setUploadingImage(true);
+
+    try {
+      // 파일명 생성 (타임스탬프 + 랜덤 문자열)
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `events/${fileName}`;
+
+      // Supabase Storage에 업로드
+      const { data, error } = await supabase.storage
+        .from('images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) throw error;
+
+      // 공개 URL 가져오기
+      const { data: { publicUrl } } = supabase.storage
+        .from('images')
+        .getPublicUrl(filePath);
+
+      // 폼 데이터 업데이트
+      setFormData({ ...formData, featured_image_url: publicUrl });
+      alert('이미지가 업로드되었습니다.');
+    } catch (error: any) {
+      console.error('이미지 업로드 오류:', error);
+      alert(`이미지 업로드에 실패했습니다: ${error.message}`);
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -1927,25 +2145,75 @@ const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
 
           <div>
             <label className={`block text-sm font-medium ${textClass} mb-2`}>
-              대표 이미지 URL
+              대표 이미지
             </label>
-            <input
-              type="text"
-              value={formData.featured_image_url}
-              onChange={(e) => setFormData({ ...formData, featured_image_url: e.target.value })}
-              className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
-              placeholder="https://example.com/image.jpg"
-            />
+
+            {/* 이미지 미리보기 */}
+            {formData.featured_image_url && (
+              <div className="mb-3">
+                <img
+                  src={formData.featured_image_url}
+                  alt="미리보기"
+                  className="w-full max-w-md h-48 object-cover rounded-lg border"
+                />
+              </div>
+            )}
+
+            {/* 파일 업로드 */}
+            <div className="space-y-2">
+              <label className={`block cursor-pointer ${uploadingImage ? 'opacity-50' : ''}`}>
+                <div className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+                  uploadingImage ? 'border-gray-300' : 'border-purple-400 hover:border-purple-500'
+                }`}>
+                  {uploadingImage ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
+                      <span className={textClass}>업로드 중...</span>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="text-3xl mb-2">📷</div>
+                      <p className={`text-sm ${textClass}`}>
+                        클릭하여 이미지 업로드 (최대 5MB)
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  disabled={uploadingImage}
+                  className="hidden"
+                />
+              </label>
+
+              {/* URL 직접 입력 */}
+              <div className="text-center text-sm text-gray-500">또는</div>
+              <input
+                type="text"
+                value={formData.featured_image_url}
+                onChange={(e) => setFormData({ ...formData, featured_image_url: e.target.value })}
+                className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+                placeholder="이미지 URL 직접 입력"
+              />
+            </div>
           </div>
 
           <div className="flex gap-3 pt-4">
             <button
-              onClick={handleSave}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                console.log('등록 버튼 클릭됨');
+                handleSave();
+              }}
               className="flex-1 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
             >
               {editingEvent ? '수정' : '등록'}
             </button>
             <button
+              type="button"
               onClick={() => setShowEditor(false)}
               className={`flex-1 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} ${textClass} px-4 py-2 rounded-lg hover:opacity-80 transition-opacity`}
             >
@@ -2025,6 +2293,7 @@ const CreatorsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [showEditor, setShowEditor] = useState(false);
   const [editingCreator, setEditingCreator] = useState<any | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     profession: '',
@@ -2033,6 +2302,12 @@ const CreatorsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
     email: '',
     verified: false,
     status: 'active' as 'active' | 'inactive',
+    social_links: {
+      instagram: '',
+      twitter: '',
+      youtube: '',
+      website: '',
+    },
   });
 
   const textClass = isDarkMode ? 'text-gray-100' : 'text-gray-900';
@@ -2072,6 +2347,12 @@ const CreatorsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
       email: '',
       verified: false,
       status: 'active',
+      social_links: {
+        instagram: '',
+        twitter: '',
+        youtube: '',
+        website: '',
+      },
     });
     setShowEditor(true);
   };
@@ -2086,6 +2367,12 @@ const CreatorsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
       email: creator.email || '',
       verified: creator.verified || false,
       status: creator.status || 'active',
+      social_links: creator.social_links || {
+        instagram: '',
+        twitter: '',
+        youtube: '',
+        website: '',
+      },
     });
     setShowEditor(true);
   };
@@ -2105,6 +2392,7 @@ const CreatorsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
         email: formData.email.trim() || null,
         verified: formData.verified,
         status: formData.status,
+        social_links: formData.social_links,
       };
 
       if (editingCreator) {
@@ -2129,6 +2417,50 @@ const CreatorsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
     } catch (error) {
       console.error('크리에이터 저장 오류:', error);
       alert('크리에이터 저장에 실패했습니다.');
+    }
+  };
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('파일 크기는 5MB 이하여야 합니다.');
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      alert('이미지 파일만 업로드 가능합니다.');
+      return;
+    }
+
+    setUploadingImage(true);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `creators/${fileName}`;
+
+      const { data, error } = await supabase.storage
+        .from('images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('images')
+        .getPublicUrl(filePath);
+
+      setFormData({ ...formData, image_url: publicUrl });
+      alert('이미지가 업로드되었습니다.');
+    } catch (error: any) {
+      console.error('이미지 업로드 오류:', error);
+      alert(`이미지 업로드에 실패했습니다: ${error.message}`);
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -2228,15 +2560,131 @@ const CreatorsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
 
           <div>
             <label className={`block text-sm font-medium ${textClass} mb-2`}>
-              프로필 이미지 URL
+              프로필 이미지
             </label>
-            <input
-              type="text"
-              value={formData.image_url}
-              onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-              className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
-              placeholder="https://example.com/profile.jpg"
-            />
+
+            {/* 이미지 미리보기 */}
+            {formData.image_url && (
+              <div className="mb-3">
+                <img
+                  src={formData.image_url}
+                  alt="미리보기"
+                  className="w-32 h-32 object-cover rounded-full border"
+                />
+              </div>
+            )}
+
+            {/* 파일 업로드 */}
+            <div className="space-y-2">
+              <label className={`block cursor-pointer ${uploadingImage ? 'opacity-50' : ''}`}>
+                <div className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+                  uploadingImage ? 'border-gray-300' : 'border-purple-400 hover:border-purple-500'
+                }`}>
+                  {uploadingImage ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
+                      <span className={textClass}>업로드 중...</span>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="text-3xl mb-2">📷</div>
+                      <p className={`text-sm ${textClass}`}>
+                        클릭하여 이미지 업로드 (최대 5MB)
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  disabled={uploadingImage}
+                  className="hidden"
+                />
+              </label>
+
+              {/* URL 직접 입력 */}
+              <div className="text-center text-sm text-gray-500">또는</div>
+              <input
+                type="text"
+                value={formData.image_url}
+                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+                placeholder="이미지 URL 직접 입력"
+              />
+            </div>
+          </div>
+
+          {/* SNS 링크 */}
+          <div>
+            <label className={`block text-sm font-medium ${textClass} mb-3`}>
+              SNS 링크
+            </label>
+            <div className="space-y-3">
+              <div>
+                <label className={`block text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>
+                  Instagram
+                </label>
+                <input
+                  type="url"
+                  value={formData.social_links.instagram}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    social_links: { ...formData.social_links, instagram: e.target.value }
+                  })}
+                  className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+                  placeholder="https://instagram.com/username"
+                />
+              </div>
+
+              <div>
+                <label className={`block text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>
+                  Twitter / X
+                </label>
+                <input
+                  type="url"
+                  value={formData.social_links.twitter}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    social_links: { ...formData.social_links, twitter: e.target.value }
+                  })}
+                  className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+                  placeholder="https://twitter.com/username"
+                />
+              </div>
+
+              <div>
+                <label className={`block text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>
+                  YouTube
+                </label>
+                <input
+                  type="url"
+                  value={formData.social_links.youtube}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    social_links: { ...formData.social_links, youtube: e.target.value }
+                  })}
+                  className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+                  placeholder="https://youtube.com/@username"
+                />
+              </div>
+
+              <div>
+                <label className={`block text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>
+                  Website
+                </label>
+                <input
+                  type="url"
+                  value={formData.social_links.website}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    social_links: { ...formData.social_links, website: e.target.value }
+                  })}
+                  className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
+                  placeholder="https://example.com"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

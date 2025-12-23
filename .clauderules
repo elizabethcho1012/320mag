@@ -369,6 +369,23 @@ divemind 연결 문제 발생 시:
 → scripts/fix-*.ts 스크립트 생성
 ```
 
+### 성능 & 로딩 문제
+```
+작업: 무한 로딩, 타임아웃, React Query 문제
+필수 참조:
+1. INFINITE_LOADING_FIX.md - 무한 로딩 해결 가이드
+2. src/App.tsx - React Query 설정
+3. src/integrations/supabase/client.ts - Supabase 타임아웃
+4. src/contexts/AuthContext.tsx - 인증 타임아웃
+
+핵심 규칙:
+→ React Query networkMode는 항상 'always' 사용
+→ 모든 네트워크 요청에 10초 타임아웃 추가
+→ AuthContext는 3초 강제 타임아웃 설정
+→ 모든 쿼리에 throwOnError: false 설정
+→ 에러 발생 시 빈 배열/객체 반환하여 앱 계속 작동
+```
+
 ## 의심스러울 때
 
 1. 위 "작업 전 필수 문서 참조 규칙"에서 해당 영역 찾기

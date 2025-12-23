@@ -82,6 +82,8 @@ export const usePublishedArticles = () => {
     staleTime: 30 * 1000,
     gcTime: 2 * 60 * 1000,
     throwOnError: false,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -157,6 +159,8 @@ export const useFeaturedArticles = () => {
     retry: 0,
     staleTime: 30 * 1000,
     throwOnError: false,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 };
 

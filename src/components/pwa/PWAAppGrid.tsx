@@ -4,9 +4,10 @@ import type { PWAAppFilters } from '@/types/pwa.types';
 
 export interface PWAAppGridProps {
   filters?: PWAAppFilters;
+  onAppClick?: (appId: string) => void;
 }
 
-export function PWAAppGrid({ filters }: PWAAppGridProps) {
+export function PWAAppGrid({ filters, onAppClick }: PWAAppGridProps) {
   const {
     data,
     isLoading,
@@ -63,7 +64,7 @@ export function PWAAppGrid({ filters }: PWAAppGridProps) {
       {/* Grid - iPhone Mockup Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {apps.map((app) => (
-          <PWAAppCard key={app.id} app={app} />
+          <PWAAppCard key={app.id} app={app} onClick={onAppClick} />
         ))}
       </div>
 
