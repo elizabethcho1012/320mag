@@ -9,6 +9,7 @@ export default function PWAAppsPage() {
   const [category, setCategory] = useState<string>('');
   const [sortBy, setSortBy] = useState<PWASortBy>('newest');
   const [showSubmitForm, setShowSubmitForm] = useState(false);
+  const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50">
@@ -58,12 +59,31 @@ export default function PWAAppsPage() {
             category: category || undefined,
             sortBy,
           }}
+          onAppClick={(appId) => setSelectedAppId(appId)}
         />
       </div>
 
       {/* Submit Form Modal */}
       {showSubmitForm && (
         <PWASubmitForm onClose={() => setShowSubmitForm(false)} />
+      )}
+
+      {/* App Detail Modal */}
+      {selectedAppId && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center p-4">
+            <div
+              className="fixed inset-0 bg-black/50 transition-opacity"
+              onClick={() => setSelectedAppId(null)}
+            />
+            <div className="relative z-10 w-full max-w-5xl bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+              <PWAAppDetailPage
+                appId={selectedAppId}
+                onClose={() => setSelectedAppId(null)}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

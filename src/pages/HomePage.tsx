@@ -24,6 +24,15 @@ const HomePage: React.FC<HomePageProps> = ({ onArticleClick, isDarkMode, highCon
   // 슬라이드용 광고 가져오기
   const { data: slideAds = [] } = useAdvertisementsByCategory(null, 'inline');
 
+  // 디버그 로그
+  console.log('HomePage 렌더링:', {
+    articlesLoading,
+    featuredLoading,
+    articlesCount: dbArticles.length,
+    featuredCount: dbFeaturedArticles.length,
+    hasError: !!articlesError
+  });
+
   const bgClass = isDarkMode
     ? 'bg-gray-900'
     : highContrast

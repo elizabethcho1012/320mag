@@ -22,6 +22,7 @@ import NoticesPage from './pages/NoticesPage';
 import WebAppsPage from './pages/WebAppsPage';
 import MyPage from './pages/MyPage';
 import PWAAppsPage from './pages/pwa/PWAAppsPage';
+import PWAAppDetailPage from './pages/pwa/PWAAppDetailPage';
 import InitialAdPopup from './components/InitialAdPopup';
 import PWAUpdatePrompt from './components/PWAUpdatePrompt';
 
@@ -64,6 +65,7 @@ if (typeof window !== 'undefined') {
 const AppContent: React.FC = () => {
   const [currentPage, setCurrentPage] = useState('home');
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
+  const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium');
