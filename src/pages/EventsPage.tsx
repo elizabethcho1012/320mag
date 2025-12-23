@@ -40,12 +40,12 @@ const EventsPage = ({ isDarkMode, highContrast }: EventsPageProps) => {
 
   const loadEvents = async () => {
     try {
-      // Fetch published events
+      // Fetch upcoming events
       const { data: eventsData, error: eventsError } = await supabase
         .from('events')
         .select('*')
-        .eq('status', 'published')
-        .order('event_date', { ascending: true });
+        .eq('status', 'upcoming')
+        .order('start_date', { ascending: true });
 
       if (eventsError) throw eventsError;
 

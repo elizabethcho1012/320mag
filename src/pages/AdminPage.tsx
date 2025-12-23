@@ -1782,10 +1782,12 @@ const RichEditor: React.FC<{
 // 기타 컴포넌트들 (플레이스홀더)
 const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
   const [events, setEvents] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showEditor, setShowEditor] = useState(false);
   const [editingEvent, setEditingEvent] = useState<any | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [activeTab, setActiveTab] = useState<'inline' | 'bottom'>('inline');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -1798,6 +1800,8 @@ const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
     registration_fee: '0',
     featured_image_url: '',
     status: 'upcoming' as 'upcoming' | 'ongoing' | 'completed' | 'cancelled',
+    position: 'inline' as 'inline' | 'bottom',
+    category_id: '',
   });
 
   const textClass = isDarkMode ? 'text-gray-100' : 'text-gray-900';
@@ -1807,15 +1811,29 @@ const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
     : 'bg-white border-gray-300 text-gray-900';
 
   React.useEffect(() => {
+    loadCategories();
     loadEvents();
   }, []);
+
+  const loadCategories = async () => {
+    const { data } = await supabase
+      .from('categories')
+      .select('id, name, slug')
+      .order('name');
+    if (data) {
+      setCategories(data);
+    }
+  };
 
   const loadEvents = async () => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('events')
-        .select('*')
+        .select(`
+          *,
+          categories(id, name, slug)
+        `)
         .order('start_date', { ascending: false });
 
       if (error) throw error;
@@ -1841,6 +1859,8 @@ const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
       registration_fee: '0',
       featured_image_url: '',
       status: 'upcoming',
+      position: activeTab === 'inline' ? 'inline' : 'bottom',
+      category_id: '',
     });
     setShowEditor(true);
   };
@@ -1859,6 +1879,8 @@ const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
       registration_fee: event.registration_fee?.toString() || '0',
       featured_image_url: event.featured_image_url || '',
       status: event.status,
+      position: event.position || 'inline',
+      category_id: event.category_id || '',
     });
     setShowEditor(true);
   };
@@ -1868,6 +1890,12 @@ const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
 
     if (!formData.title.trim() || !formData.start_date) {
       alert('제목과 시작일은 필수입니다.');
+      return;
+    }
+
+    // 하단 배너는 카테고리 필수
+    if (activeTab === 'bottom' && !formData.category_id) {
+      alert('하단 배너는 카테고리를 선택해야 합니다.');
       return;
     }
 
@@ -1884,6 +1912,8 @@ const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
         registration_fee: parseInt(formData.registration_fee) || 0,
         featured_image_url: formData.featured_image_url.trim() || null,
         status: formData.status,
+        position: formData.position,
+        category_id: formData.category_id || null,
       };
 
       console.log('저장할 데이터:', eventData);
@@ -2195,8 +2225,59 @@ const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
                 value={formData.featured_image_url}
                 onChange={(e) => setFormData({ ...formData, featured_image_url: e.target.value })}
                 className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
-                placeholder="이미지 URL 직접 입력"
+                placeholder="이미지 URL 직접 입력 (비워두면 텍스트 기본 배너)"
               />
+              <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                💡 이미지를 업로드하지 않으면 제목과 설명이 표시되는 기본 배너 디자인이 사용됩니다
+              </p>
+            </div>
+          </div>
+
+          {/* 카테고리와 위치 선택 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                카테고리 {activeTab === 'bottom' && <span className="text-red-500">*</span>}
+              </label>
+              <select
+                value={formData.category_id}
+                onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${inputClass}`}
+              >
+                <option value="">
+                  {activeTab === 'inline' ? '전체 (모든 페이지)' : '카테고리 선택'}
+                </option>
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+              {activeTab === 'bottom' && (
+                <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  하단 배너는 선택한 카테고리 페이지에만 표시됩니다
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className={`block text-sm font-medium ${textClass} mb-2`}>배너 위치</label>
+              <select
+                value={formData.position}
+                onChange={(e) => setFormData({ ...formData, position: e.target.value as any })}
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${inputClass}`}
+              >
+                {activeTab === 'inline' ? (
+                  <option value="inline">상단 슬라이드</option>
+                ) : (
+                  <option value="bottom">카테고리 하단</option>
+                )}
+              </select>
+              <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                {activeTab === 'inline'
+                  ? '홈페이지 상단 슬라이더에 표시됩니다'
+                  : '선택한 카테고리 페이지 하단에 표시됩니다'}
+              </p>
             </div>
           </div>
 
@@ -2225,6 +2306,15 @@ const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
     );
   }
 
+  // 현재 탭에 해당하는 이벤트만 필터링
+  const filteredEvents = events.filter(event => {
+    if (activeTab === 'inline') {
+      return event.position === 'inline' || !event.position; // position이 없으면 inline으로 간주
+    } else {
+      return event.position === 'bottom';
+    }
+  });
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -2237,15 +2327,45 @@ const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
         </button>
       </div>
 
-      {events.length === 0 ? (
+      {/* 탭 메뉴 */}
+      <div className="flex gap-2 mb-6">
+        <button
+          onClick={() => setActiveTab('inline')}
+          className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+            activeTab === 'inline'
+              ? 'bg-purple-600 text-white'
+              : isDarkMode
+              ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          📊 상단 배너 (슬라이드)
+        </button>
+        <button
+          onClick={() => setActiveTab('bottom')}
+          className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+            activeTab === 'bottom'
+              ? 'bg-purple-600 text-white'
+              : isDarkMode
+              ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          📌 하단 배너 (카테고리별)
+        </button>
+      </div>
+
+      {filteredEvents.length === 0 ? (
         <div className={`${cardClass} rounded-lg border p-8 text-center`}>
           <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            등록된 이벤트가 없습니다.
+            {activeTab === 'inline'
+              ? '등록된 상단 배너 이벤트가 없습니다.'
+              : '등록된 하단 배너 이벤트가 없습니다.'}
           </p>
         </div>
       ) : (
         <div className="space-y-4">
-          {events.map((event) => (
+          {filteredEvents.map((event) => (
             <div key={event.id} className={`${cardClass} rounded-lg border p-6`}>
               <div className="flex justify-between items-start">
                 <div className="flex-1">
@@ -3398,6 +3518,7 @@ const AdvertisementsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }
   const [isLoading, setIsLoading] = useState(true);
   const [showEditor, setShowEditor] = useState(false);
   const [editingAd, setEditingAd] = useState<any | null>(null);
+  const [activeTab, setActiveTab] = useState<'inline' | 'bottom'>('inline');
   const [formData, setFormData] = useState({
     title: '',
     image_url: '',
@@ -3483,7 +3604,7 @@ const AdvertisementsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }
       image_url: '',
       link_url: '',
       category_id: '',
-      position: 'top',
+      position: activeTab === 'inline' ? 'inline' : 'top',
       is_active: true,
       start_date: '',
       end_date: '',
@@ -3494,6 +3615,12 @@ const AdvertisementsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }
   const handleSave = async () => {
     if (!formData.title.trim()) {
       alert('제목을 입력해주세요.');
+      return;
+    }
+
+    // 하단 배너는 카테고리 필수
+    if (activeTab === 'bottom' && !formData.category_id) {
+      alert('하단 배너는 카테고리를 선택해야 합니다.');
       return;
     }
 
@@ -3580,6 +3707,15 @@ const AdvertisementsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }
     );
   }
 
+  // 현재 탭에 해당하는 광고만 필터링
+  const filteredAds = advertisements.filter(ad => {
+    if (activeTab === 'inline') {
+      return ad.position === 'inline';
+    } else {
+      return ad.position === 'top' || ad.position === 'sidebar';
+    }
+  });
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -3590,6 +3726,34 @@ const AdvertisementsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }
         >
           <span>+</span>
           새 광고 등록
+        </button>
+      </div>
+
+      {/* 탭 메뉴 */}
+      <div className="flex gap-2 mb-6">
+        <button
+          onClick={() => setActiveTab('inline')}
+          className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+            activeTab === 'inline'
+              ? 'bg-purple-600 text-white'
+              : isDarkMode
+              ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          📊 상단 배너 (슬라이드)
+        </button>
+        <button
+          onClick={() => setActiveTab('bottom')}
+          className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+            activeTab === 'bottom'
+              ? 'bg-purple-600 text-white'
+              : isDarkMode
+              ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          📌 하단 배너 (카테고리별)
         </button>
       </div>
 
@@ -3649,19 +3813,28 @@ const AdvertisementsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className={`block text-sm font-medium ${textClass} mb-2`}>카테고리</label>
+                <label className={`block text-sm font-medium ${textClass} mb-2`}>
+                  카테고리 {activeTab === 'bottom' && <span className="text-red-500">*</span>}
+                </label>
                 <select
                   value={formData.category_id}
                   onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
                   className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${inputClass}`}
                 >
-                  <option value="">전체 (모든 페이지)</option>
+                  <option value="">
+                    {activeTab === 'inline' ? '전체 (모든 페이지)' : '카테고리 선택'}
+                  </option>
                   {categories.map(cat => (
                     <option key={cat.id} value={cat.id}>
                       {cat.name}
                     </option>
                   ))}
                 </select>
+                {activeTab === 'bottom' && (
+                  <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    하단 배너는 선택한 카테고리 페이지에만 표시됩니다
+                  </p>
+                )}
               </div>
 
               <div>
@@ -3671,10 +3844,20 @@ const AdvertisementsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }
                   onChange={(e) => setFormData({ ...formData, position: e.target.value as any })}
                   className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${inputClass}`}
                 >
-                  <option value="top">상단</option>
-                  <option value="sidebar">사이드바</option>
-                  <option value="inline">인라인</option>
+                  {activeTab === 'inline' ? (
+                    <option value="inline">인라인 (상단 슬라이드)</option>
+                  ) : (
+                    <>
+                      <option value="top">카테고리 상단</option>
+                      <option value="sidebar">카테고리 사이드바</option>
+                    </>
+                  )}
                 </select>
+                <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {activeTab === 'inline'
+                    ? '홈페이지 상단 슬라이더에 표시됩니다'
+                    : '선택한 카테고리 페이지 하단에 표시됩니다'}
+                </p>
               </div>
             </div>
 
@@ -3737,15 +3920,17 @@ const AdvertisementsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }
         </div>
       ) : (
         <div>
-          {advertisements.length === 0 ? (
+          {filteredAds.length === 0 ? (
             <div className={`${cardClass} rounded-lg border p-8 text-center`}>
               <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                등록된 광고가 없습니다. 새 광고를 등록하세요.
+                {activeTab === 'inline'
+                  ? '등록된 상단 배너가 없습니다. 새 광고를 등록하세요.'
+                  : '등록된 하단 배너가 없습니다. 새 광고를 등록하세요.'}
               </p>
             </div>
           ) : (
             <div className="space-y-4">
-              {advertisements.map((ad) => (
+              {filteredAds.map((ad) => (
                 <div key={ad.id} className={`${cardClass} rounded-lg border p-6`}>
                   <div className="flex items-start gap-4">
                     {ad.image_url && (

@@ -47,6 +47,8 @@ export const useFeaturedEvents = () => {
   return useQuery({
     queryKey: ['events', 'featured'],
     queryFn: async () => {
+      console.log('🎉 useFeaturedEvents: 이벤트 조회 시작...');
+
       const { data, error } = await supabase
         .from('events')
         .select('*')
@@ -55,10 +57,11 @@ export const useFeaturedEvents = () => {
         .limit(3);
 
       if (error) {
-        console.error('Error fetching featured events:', error);
+        console.error('❌ useFeaturedEvents 오류:', error);
         throw error;
       }
 
+      console.log('✅ useFeaturedEvents 성공:', data?.length, '개 조회됨', data);
       return data as Event[];
     },
     staleTime: 5 * 60 * 1000, // 5분

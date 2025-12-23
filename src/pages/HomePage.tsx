@@ -185,9 +185,17 @@ const HomePage: React.FC<HomePageProps> = ({ onArticleClick, isDarkMode, highCon
     ? featuredEvents.slice(0, 2).map(transformEvent)
     : [];
 
+  // 디버깅 로그
+  console.log('🎉 Featured Events:', featuredEvents);
+  console.log('🎉 Event Slides:', eventSlides);
+  console.log('📰 Slide Articles:', slideArticles.length);
+  console.log('📢 Ad Slides:', adSlides.length);
+
   // 기사, 광고, 이벤트를 섞어서 최종 슬라이드 구성
   const featuredArticles = [...slideArticles, ...adSlides, ...eventSlides]
     .slice(0, homepageSettings?.total_slides || 5);
+
+  console.log('🎬 Featured Articles (with events):', featuredArticles);
 
   // 이미 사용된 기사 ID 추적 (중복 방지)
   const usedArticleIds = new Set<string>();
