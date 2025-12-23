@@ -333,6 +333,26 @@ CREATE POLICY "Authenticated users can insert"
 필수 참조:
 1. DEPLOYMENT_GUIDE.md - 배포 가이드
 2. QUICK_START_GUIDE.md - 빠른 시작
+3. CATEGORY_BANNER_UPDATE.md - 최근 성능 개선 및 배포 가이드
+```
+
+### Vercel 배포 중요 규칙
+```
+❌ vercel link 명령 절대 실행 금지
+✅ git push만으로 자동 배포
+
+이유:
+- vercel link 실행 시 divemind 팀으로 잘못 연결될 수 있음
+- 현재 3rdtwenty@gmail.com (elizabethchos-projects)로 설정되어 있음
+- GitHub push → Vercel 자동 배포로 충분
+
+divemind 연결 문제 발생 시:
+1. vercel whoami로 현재 계정 확인
+2. vercel teams ls로 팀 목록 확인
+3. divemind가 보이면:
+   - vercel logout
+   - vercel login (3rdtwenty@gmail.com)
+4. rm -rf .vercel (로컬 설정 삭제)
 ```
 
 ### 브랜드 용어 & 스타일

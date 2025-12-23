@@ -1618,49 +1618,392 @@ const RichEditor: React.FC<{
 
 // 기타 컴포넌트들 (플레이스홀더)
 const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
+  const [events, setEvents] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   const textClass = isDarkMode ? 'text-gray-100' : 'text-gray-900';
+  const cardClass = isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
+
+  React.useEffect(() => {
+    loadEvents();
+  }, []);
+
+  const loadEvents = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .order('start_date', { ascending: false });
+
+      if (error) throw error;
+      setEvents(data || []);
+    } catch (error) {
+      console.error('이벤트 로드 오류:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div>
-      <h2 className={`text-2xl font-bold ${textClass} mb-4`}>이벤트 관리</h2>
-      <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-        이벤트 생성, 수정, 참가자 관리 기능이 구현될 예정입니다.
-      </p>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className={`text-2xl font-bold ${textClass}`}>이벤트 관리</h2>
+        <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+          새 이벤트 등록
+        </button>
+      </div>
+
+      {events.length === 0 ? (
+        <div className={`${cardClass} rounded-lg border p-8 text-center`}>
+          <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            등록된 이벤트가 없습니다.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {events.map((event) => (
+            <div key={event.id} className={`${cardClass} rounded-lg border p-6`}>
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <h3 className={`text-lg font-semibold ${textClass} mb-2`}>{event.title}</h3>
+                  <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mb-3`}>
+                    {event.description}
+                  </p>
+                  <div className="flex flex-wrap gap-4 text-sm">
+                    <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
+                      시작일: {new Date(event.start_date).toLocaleDateString('ko-KR')}
+                    </span>
+                    <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
+                      유형: {event.event_type}
+                    </span>
+                    <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
+                      상태: {event.status}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex gap-2 ml-4">
+                  <button className="text-blue-600 hover:text-blue-700 px-3 py-1 rounded">
+                    수정
+                  </button>
+                  <button className="text-red-600 hover:text-red-700 px-3 py-1 rounded">
+                    삭제
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
 
 const CreatorsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
+  const [creators, setCreators] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   const textClass = isDarkMode ? 'text-gray-100' : 'text-gray-900';
+  const cardClass = isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
+
+  React.useEffect(() => {
+    loadCreators();
+  }, []);
+
+  const loadCreators = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('creators')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+      setCreators(data || []);
+    } catch (error) {
+      console.error('크리에이터 로드 오류:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div>
-      <h2 className={`text-2xl font-bold ${textClass} mb-4`}>크리에이터 관리</h2>
-      <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-        크리에이터 프로필 관리 및 콘텐츠 배정 기능이 구현될 예정입니다.
-      </p>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className={`text-2xl font-bold ${textClass}`}>크리에이터 관리</h2>
+        <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+          새 크리에이터 등록
+        </button>
+      </div>
+
+      {creators.length === 0 ? (
+        <div className={`${cardClass} rounded-lg border p-8 text-center`}>
+          <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            등록된 크리에이터가 없습니다.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {creators.map((creator) => (
+            <div key={creator.id} className={`${cardClass} rounded-lg border p-6`}>
+              <div className="flex items-start gap-4">
+                {creator.image_url && (
+                  <img
+                    src={creator.image_url}
+                    alt={creator.name}
+                    className="w-16 h-16 rounded-full object-cover"
+                  />
+                )}
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className={`text-lg font-semibold ${textClass}`}>{creator.name}</h3>
+                    {creator.verified && (
+                      <span className="text-blue-500" title="인증됨">✓</span>
+                    )}
+                  </div>
+                  <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mb-2`}>
+                    {creator.profession}
+                  </p>
+                  <div className="flex gap-4 text-xs">
+                    <span className={isDarkMode ? 'text-gray-500' : 'text-gray-500'}>
+                      글 {creator.articles_count || 0}개
+                    </span>
+                    <span className={isDarkMode ? 'text-gray-500' : 'text-gray-500'}>
+                      상태: {creator.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2 mt-4">
+                <button className="flex-1 text-blue-600 hover:text-blue-700 py-1 rounded text-sm">
+                  수정
+                </button>
+                <button className="flex-1 text-red-600 hover:text-red-700 py-1 rounded text-sm">
+                  삭제
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
 
 const CategoriesContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
+  const [categories, setCategories] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   const textClass = isDarkMode ? 'text-gray-100' : 'text-gray-900';
+  const cardClass = isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
+
+  React.useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const loadCategories = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .select(`
+          *,
+          subcategories(*)
+        `)
+        .order('order_index');
+
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (error) {
+      console.error('카테고리 로드 오류:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div>
-      <h2 className={`text-2xl font-bold ${textClass} mb-4`}>카테고리 관리</h2>
-      <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-        카테고리 및 서브카테고리 생성, 편집 기능이 구현될 예정입니다.
-      </p>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className={`text-2xl font-bold ${textClass}`}>카테고리 관리</h2>
+        <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+          새 카테고리 추가
+        </button>
+      </div>
+
+      {categories.length === 0 ? (
+        <div className={`${cardClass} rounded-lg border p-8 text-center`}>
+          <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            등록된 카테고리가 없습니다.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {categories.map((category) => (
+            <div key={category.id} className={`${cardClass} rounded-lg border p-6`}>
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className={`text-lg font-semibold ${textClass} mb-1`}>{category.name}</h3>
+                  <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Slug: {category.slug}
+                  </p>
+                  {category.description && (
+                    <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mt-2`}>
+                      {category.description}
+                    </p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button className="text-blue-600 hover:text-blue-700 px-3 py-1 rounded">
+                    수정
+                  </button>
+                  <button className="text-red-600 hover:text-red-700 px-3 py-1 rounded">
+                    삭제
+                  </button>
+                </div>
+              </div>
+
+              {category.subcategories && category.subcategories.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <p className={`text-sm font-medium ${textClass} mb-2`}>
+                    서브카테고리 ({category.subcategories.length}개)
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {category.subcategories.map((sub: any) => (
+                      <span
+                        key={sub.id}
+                        className={`px-3 py-1 rounded-full text-sm ${
+                          isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'
+                        }`}
+                      >
+                        {sub.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
 
 const MediaContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
+  const [media, setMedia] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   const textClass = isDarkMode ? 'text-gray-100' : 'text-gray-900';
+  const cardClass = isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
+
+  React.useEffect(() => {
+    loadMedia();
+  }, []);
+
+  const loadMedia = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('media')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setMedia(data || []);
+    } catch (error) {
+      console.error('미디어 로드 오류:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div>
-      <h2 className={`text-2xl font-bold ${textClass} mb-4`}>미디어 라이브러리</h2>
-      <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-        이미지, 비디오 업로드 및 관리 기능이 구현될 예정입니다.
-      </p>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className={`text-2xl font-bold ${textClass}`}>미디어 라이브러리</h2>
+        <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+          파일 업로드
+        </button>
+      </div>
+
+      {media.length === 0 ? (
+        <div className={`${cardClass} rounded-lg border p-8 text-center`}>
+          <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            업로드된 미디어가 없습니다.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {media.map((item) => (
+            <div key={item.id} className={`${cardClass} rounded-lg border overflow-hidden`}>
+              {item.mime_type?.startsWith('image/') && item.file_path ? (
+                <img
+                  src={item.file_path}
+                  alt={item.alt_text || item.original_name}
+                  className="w-full h-48 object-cover"
+                />
+              ) : (
+                <div className="w-full h-48 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                  <span className="text-4xl">📄</span>
+                </div>
+              )}
+              <div className="p-3">
+                <p className={`text-sm font-medium ${textClass} truncate`}>
+                  {item.original_name}
+                </p>
+                <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
+                  {item.mime_type}
+                </p>
+                {item.file_size && (
+                  <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {(item.file_size / 1024).toFixed(1)} KB
+                  </p>
+                )}
+                <div className="flex gap-2 mt-3">
+                  <button className="flex-1 text-xs text-blue-600 hover:text-blue-700 py-1">
+                    수정
+                  </button>
+                  <button className="flex-1 text-xs text-red-600 hover:text-red-700 py-1">
+                    삭제
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
