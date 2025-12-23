@@ -35,18 +35,15 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000, // 5분
-      gcTime: 10 * 60 * 1000, // 10분 (cacheTime → gcTime으로 변경)
+      gcTime: 10 * 60 * 1000, // 10분
       retry: 1,
+      retryDelay: 1000, // 재시도 간격 1초
       refetchOnWindowFocus: false,
-      // Chrome 프로필별 캐시 문제 방지
-      refetchOnMount: true,
-      refetchOnReconnect: true,
-      // networkMode를 'always'로 변경 - online/offline 상태와 무관하게 쿼리 실행
-      networkMode: 'always',
+      refetchOnReconnect: false,
+      // refetchOnMount는 기본값(true) 사용 - 캐시가 stale하면 refetch
     },
     mutations: {
       retry: 1,
-      networkMode: 'always',
     },
   },
 });

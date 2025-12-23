@@ -12,6 +12,8 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     VitePWA({
+      // 개발 모드에서는 Service Worker 비활성화
+      disable: mode === 'development',
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icon-192.png', 'icon-512.png', '320-logo.jpg'],
       manifest: {

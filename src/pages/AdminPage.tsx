@@ -1787,7 +1787,7 @@ const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
   const [showEditor, setShowEditor] = useState(false);
   const [editingEvent, setEditingEvent] = useState<any | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [activeTab, setActiveTab] = useState<'inline' | 'bottom'>('inline');
+  const [activeTab, setActiveTab] = useState<'inline' | 'top'>('inline');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -1800,7 +1800,7 @@ const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
     registration_fee: '0',
     featured_image_url: '',
     status: 'upcoming' as 'upcoming' | 'ongoing' | 'completed' | 'cancelled',
-    position: 'inline' as 'inline' | 'bottom',
+    position: 'inline' as 'inline' | 'top',
     category_id: '',
   });
 
@@ -1859,7 +1859,7 @@ const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
       registration_fee: '0',
       featured_image_url: '',
       status: 'upcoming',
-      position: activeTab === 'inline' ? 'inline' : 'bottom',
+      position: activeTab === 'inline' ? 'inline' : 'top',
       category_id: '',
     });
     setShowEditor(true);
@@ -1893,9 +1893,9 @@ const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
       return;
     }
 
-    // 하단 배너는 카테고리 필수
-    if (activeTab === 'bottom' && !formData.category_id) {
-      alert('하단 배너는 카테고리를 선택해야 합니다.');
+    // 상단 배너는 카테고리 필수
+    if (activeTab === 'top' && !formData.category_id) {
+      alert('상단 배너는 카테고리를 선택해야 합니다.');
       return;
     }
 
@@ -2237,7 +2237,7 @@ const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className={`block text-sm font-medium ${textClass} mb-2`}>
-                카테고리 {activeTab === 'bottom' && <span className="text-red-500">*</span>}
+                카테고리 {activeTab === 'top' && <span className="text-red-500">*</span>}
               </label>
               <select
                 value={formData.category_id}
@@ -2253,9 +2253,9 @@ const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
                   </option>
                 ))}
               </select>
-              {activeTab === 'bottom' && (
+              {activeTab === 'top' && (
                 <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  하단 배너는 선택한 카테고리 페이지에만 표시됩니다
+                  상단 배너는 선택한 카테고리 페이지에만 표시됩니다
                 </p>
               )}
             </div>
@@ -2270,13 +2270,13 @@ const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
                 {activeTab === 'inline' ? (
                   <option value="inline">상단 슬라이드</option>
                 ) : (
-                  <option value="bottom">카테고리 하단</option>
+                  <option value="top">카테고리 상단</option>
                 )}
               </select>
               <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                 {activeTab === 'inline'
                   ? '홈페이지 상단 슬라이더에 표시됩니다'
-                  : '선택한 카테고리 페이지 하단에 표시됩니다'}
+                  : '선택한 카테고리 페이지 상단에 표시됩니다'}
               </p>
             </div>
           </div>
@@ -2311,7 +2311,7 @@ const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
     if (activeTab === 'inline') {
       return event.position === 'inline' || !event.position; // position이 없으면 inline으로 간주
     } else {
-      return event.position === 'bottom';
+      return event.position === 'top';
     }
   });
 
@@ -2342,16 +2342,16 @@ const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
           📊 상단 배너 (슬라이드)
         </button>
         <button
-          onClick={() => setActiveTab('bottom')}
+          onClick={() => setActiveTab('top')}
           className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-            activeTab === 'bottom'
+            activeTab === 'top'
               ? 'bg-purple-600 text-white'
               : isDarkMode
               ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
-          📌 하단 배너 (카테고리별)
+          📌 상단 배너 (카테고리별)
         </button>
       </div>
 
@@ -2360,7 +2360,7 @@ const EventsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
           <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
             {activeTab === 'inline'
               ? '등록된 상단 배너 이벤트가 없습니다.'
-              : '등록된 하단 배너 이벤트가 없습니다.'}
+              : '등록된 상단 배너 이벤트가 없습니다.'}
           </p>
         </div>
       ) : (
@@ -3518,13 +3518,13 @@ const AdvertisementsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }
   const [isLoading, setIsLoading] = useState(true);
   const [showEditor, setShowEditor] = useState(false);
   const [editingAd, setEditingAd] = useState<any | null>(null);
-  const [activeTab, setActiveTab] = useState<'inline' | 'bottom'>('inline');
+  const [activeTab, setActiveTab] = useState<'inline' | 'top'>('inline');
   const [formData, setFormData] = useState({
     title: '',
     image_url: '',
     link_url: '',
     category_id: '',
-    position: 'top' as 'top' | 'sidebar' | 'inline',
+    position: 'top' as 'top' | 'inline',
     is_active: true,
     start_date: '',
     end_date: '',
@@ -3618,9 +3618,9 @@ const AdvertisementsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }
       return;
     }
 
-    // 하단 배너는 카테고리 필수
-    if (activeTab === 'bottom' && !formData.category_id) {
-      alert('하단 배너는 카테고리를 선택해야 합니다.');
+    // 상단 배너는 카테고리 필수
+    if (activeTab === 'top' && !formData.category_id) {
+      alert('상단 배너는 카테고리를 선택해야 합니다.');
       return;
     }
 
@@ -3712,7 +3712,7 @@ const AdvertisementsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }
     if (activeTab === 'inline') {
       return ad.position === 'inline';
     } else {
-      return ad.position === 'top' || ad.position === 'sidebar';
+      return ad.position === 'top';
     }
   });
 
@@ -3744,16 +3744,16 @@ const AdvertisementsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }
           📊 상단 배너 (슬라이드)
         </button>
         <button
-          onClick={() => setActiveTab('bottom')}
+          onClick={() => setActiveTab('top')}
           className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-            activeTab === 'bottom'
+            activeTab === 'top'
               ? 'bg-purple-600 text-white'
               : isDarkMode
               ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
-          📌 하단 배너 (카테고리별)
+          📌 상단 배너 (카테고리별)
         </button>
       </div>
 
@@ -3814,7 +3814,7 @@ const AdvertisementsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className={`block text-sm font-medium ${textClass} mb-2`}>
-                  카테고리 {activeTab === 'bottom' && <span className="text-red-500">*</span>}
+                  카테고리 {activeTab === 'top' && <span className="text-red-500">*</span>}
                 </label>
                 <select
                   value={formData.category_id}
@@ -3830,9 +3830,9 @@ const AdvertisementsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }
                     </option>
                   ))}
                 </select>
-                {activeTab === 'bottom' && (
+                {activeTab === 'top' && (
                   <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    하단 배너는 선택한 카테고리 페이지에만 표시됩니다
+                    상단 배너는 선택한 카테고리 페이지에만 표시됩니다
                   </p>
                 )}
               </div>
@@ -3847,16 +3847,13 @@ const AdvertisementsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }
                   {activeTab === 'inline' ? (
                     <option value="inline">인라인 (상단 슬라이드)</option>
                   ) : (
-                    <>
-                      <option value="top">카테고리 상단</option>
-                      <option value="sidebar">카테고리 사이드바</option>
-                    </>
+                    <option value="top">카테고리 상단</option>
                   )}
                 </select>
                 <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                   {activeTab === 'inline'
                     ? '홈페이지 상단 슬라이더에 표시됩니다'
-                    : '선택한 카테고리 페이지 하단에 표시됩니다'}
+                    : '선택한 카테고리 페이지 상단에 표시됩니다'}
                 </p>
               </div>
             </div>
@@ -3925,7 +3922,7 @@ const AdvertisementsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }
               <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                 {activeTab === 'inline'
                   ? '등록된 상단 배너가 없습니다. 새 광고를 등록하세요.'
-                  : '등록된 하단 배너가 없습니다. 새 광고를 등록하세요.'}
+                  : '등록된 상단 배너가 없습니다. 새 광고를 등록하세요.'}
               </p>
             </div>
           ) : (
@@ -3960,7 +3957,7 @@ const AdvertisementsContent: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }
                         <span className={`text-xs px-2 py-1 rounded-full ${
                           isDarkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-800'
                         }`}>
-                          {ad.position === 'top' ? '상단' : ad.position === 'sidebar' ? '사이드바' : '인라인'}
+                          {ad.position === 'top' ? '상단' : '인라인'}
                         </span>
                       </div>
                       <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} space-y-1`}>

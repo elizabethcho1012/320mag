@@ -209,35 +209,124 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // 인증 상태 변화 감지
   useEffect(() => {
     let isMounted = true;
-    let authInitialized = false;
+    let isInitialized = false;
 
-    // 초기 세션 확인
-    const initializeAuth = async () => {
-      try {
-        const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+    console.log('🔷 AuthContext: useEffect 시작');
 
-        if (!isMounted) return;
+    // 현재 세션 확인 (timeout 포함)
+    const sessionCheckPromise = Promise.race([
+      supabase.auth.getSession(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('getSession timeout')), 800)
+      )
+    ]);
 
-        // getSession이 timeout 등으로 실패한 경우
-        if (sessionError) {
-          console.error('세션 조회 오류:', sessionError);
-          // 로그인 안 한 상태로 간주하고 계속 진행
-          setSession(null);
-          setUser(null);
-          setProfile(null);
-          authInitialized = true;
-          setLoading(false);
+    sessionCheckPromise.then((result: any) => {
+      if (!isMounted || isInitialized) return;
+
+      const currentSession = result?.data?.session;
+
+      if (currentSession?.user) {
+        console.log('🔷 Current session found:', currentSession.user.email);
+        setSession(currentSession);
+        setUser(currentSession.user);
+
+        // 프로필 조회 (백그라운드)
+        fetchProfile(currentSession.user.id).then(async (userProfile) => {
+          if (!isMounted) return;
+          if (!userProfile && currentSession.user.email) {
+            const username = currentSession.user.user_metadata?.username ||
+                           currentSession.user.email.split('@')[0];
+            userProfile = await createProfile(
+              currentSession.user.id,
+              currentSession.user.email,
+              username
+            );
+          }
+          if (isMounted) {
+            setProfile(userProfile);
+            console.log('🔷 Profile loaded from current session');
+          }
+        }).catch(err => console.error('프로필 조회/생성 실패:', err));
+      } else {
+        console.log('🔷 No current session');
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+      }
+
+      isInitialized = true;
+      setLoading(false);
+      console.log('✅ Current session check complete, loading=false');
+    }).catch((error) => {
+      console.error('❌ Session check error/timeout:', error.message);
+      if (isMounted && !isInitialized) {
+        // getSession 실패해도 진행 (auth 이벤트로 복구 가능)
+        isInitialized = true;
+        setLoading(false);
+        console.log('⚠️ Session check failed but continuing');
+      }
+    });
+
+    // 인증 상태 변화 구독
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, currentSession) => {
+        console.log('🔔 Auth event:', event, 'session:', !!currentSession);
+
+        if (!isMounted) {
+          console.log('🔔 Component unmounted, ignoring event');
           return;
         }
 
-        if (currentSession?.user) {
+        // INITIAL_SESSION 처리 (앱 시작 시)
+        if (event === 'INITIAL_SESSION') {
+          console.log('🔔 INITIAL_SESSION - processing');
+          if (currentSession?.user) {
+            console.log('🔔 User found in INITIAL_SESSION:', currentSession.user.email);
+            setSession(currentSession);
+            setUser(currentSession.user);
+
+            // 프로필 조회 (백그라운드)
+            fetchProfile(currentSession.user.id).then(async (userProfile) => {
+              if (!isMounted) return;
+              if (!userProfile && currentSession.user.email) {
+                const username = currentSession.user.user_metadata?.username ||
+                               currentSession.user.email.split('@')[0];
+                userProfile = await createProfile(
+                  currentSession.user.id,
+                  currentSession.user.email,
+                  username
+                );
+              }
+              if (isMounted) {
+                setProfile(userProfile);
+                console.log('🔔 INITIAL_SESSION profile set');
+              }
+            }).catch(err => console.error('프로필 조회/생성 실패:', err));
+          } else {
+            console.log('🔔 No user in INITIAL_SESSION');
+            setSession(null);
+            setUser(null);
+            setProfile(null);
+          }
+
+          // 초기화 완료
+          if (!isInitialized) {
+            isInitialized = true;
+            setLoading(false);
+            console.log('✅ INITIAL_SESSION processed, loading=false');
+          }
+          return;
+        }
+
+        // SIGNED_IN 이벤트 처리 (로그인 후 or 앱 시작 시)
+        if (event === 'SIGNED_IN' && currentSession?.user) {
+          console.log('🔔 SIGNED_IN event - updating user and profile');
           setSession(currentSession);
           setUser(currentSession.user);
 
-          // 프로필 조회 (타임아웃되면 null 반환)
+          // 프로필 조회 및 생성
           let userProfile = await fetchProfile(currentSession.user.id);
-
-          // 프로필이 없으면 생성 시도 (타임아웃되면 null로 유지)
           if (!userProfile && currentSession.user.email) {
             const username = currentSession.user.user_metadata?.username ||
                            currentSession.user.email.split('@')[0];
@@ -248,80 +337,62 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             );
           }
 
-          if (!isMounted) return;
-          setProfile(userProfile);
-        } else {
-          // 로그인하지 않은 상태
-          setSession(null);
-          setUser(null);
-          setProfile(null);
-        }
-      } catch (error) {
-        console.error('인증 초기화 오류:', error);
-        // 에러 발생 시에도 로그인 안 한 상태로 진행
-        if (isMounted) {
-          setSession(null);
-          setUser(null);
-          setProfile(null);
-        }
-      } finally {
-        if (isMounted) {
-          authInitialized = true;
-          console.log('🔵 AuthContext finally: Setting loading to false');
-          setLoading(false);
-          console.log('🔵 AuthContext finally: setLoading(false) called');
-        }
-      }
-    };
+          if (isMounted) {
+            setProfile(userProfile);
+            console.log('🔔 SIGNED_IN profile updated');
+          }
 
-    // 무한 로딩 방지용 타임아웃 (3초 후 강제로 loading 해제)
-    const timeoutId = setTimeout(() => {
-      if (isMounted && !authInitialized) {
-        console.warn('⚠️ Auth initialization timeout - forcing loading to false');
-        console.log('🔴 AuthContext timeout: isMounted:', isMounted, 'authInitialized:', authInitialized);
-        setLoading(false);
-        console.log('🔴 AuthContext timeout: setLoading(false) called');
-      }
-    }, 3000);
-
-    initializeAuth();
-
-    // 인증 상태 변화 구독
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
-        console.log('Auth state changed:', event);
-
-        if (!isMounted) return;
-
-        // INITIAL_SESSION 이벤트는 무시 (initializeAuth에서 이미 처리됨)
-        if (event === 'INITIAL_SESSION') {
+          // SIGNED_IN이 초기 로딩 중에 발생한 경우 loading 해제
+          if (!isInitialized) {
+            isInitialized = true;
+            setLoading(false);
+            console.log('✅ SIGNED_IN processed (initial), loading=false');
+          }
           return;
         }
 
-        if (currentSession?.user) {
-          // 프로필 조회
-          const userProfile = await fetchProfile(currentSession.user.id);
+        // SIGNED_OUT 처리
+        if (event === 'SIGNED_OUT') {
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          console.log('🔔 User signed out');
+          return;
+        }
 
-          // 한 번에 모든 상태 업데이트 (리렌더링 최소화)
-          if (isMounted) {
-            setSession(currentSession);
-            setUser(currentSession.user);
-            setProfile(userProfile);
-            console.log('🟢 AuthContext onAuthStateChange: Auth state updated');
+        // TOKEN_REFRESHED 처리
+        if (event === 'TOKEN_REFRESHED' && currentSession?.user) {
+          setSession(currentSession);
+          setUser(currentSession.user);
+
+          // 초기화가 안 된 상태에서 TOKEN_REFRESHED가 먼저 오는 경우
+          if (!isInitialized) {
+            isInitialized = true;
+            setLoading(false);
+            console.log('✅ TOKEN_REFRESHED processed (initial), loading=false');
           }
-        } else {
-          // 로그아웃 시
-          if (isMounted) {
-            setSession(null);
-            setUser(null);
-            setProfile(null);
-            console.log('🟢 AuthContext onAuthStateChange: User logged out');
-          }
+
+          fetchProfile(currentSession.user.id).then(userProfile => {
+            if (isMounted) {
+              setProfile(userProfile);
+              console.log('🔔 Token refreshed, profile updated');
+            }
+          });
         }
       }
     );
 
+    // 무한 로딩 방지용 타임아웃 (1초 후 강제로 loading 해제)
+    const timeoutId = setTimeout(() => {
+      if (isMounted && !isInitialized) {
+        console.warn('⚠️ Auth initialization timeout (1초) - 강제로 loading=false');
+        isInitialized = true;
+        setLoading(false);
+      }
+    }, 1000);
+
     return () => {
+      console.log('🔷 AuthContext: cleanup');
       isMounted = false;
       clearTimeout(timeoutId);
       subscription.unsubscribe();

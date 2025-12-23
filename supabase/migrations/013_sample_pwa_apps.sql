@@ -1,0 +1,93 @@
+-- Insert sample PWA apps for testing
+-- Note: Replace 'YOUR_USER_ID' with your actual Supabase user ID
+
+INSERT INTO pwa_apps (
+  name,
+  description,
+  url,
+  category,
+  pricing,
+  developer,
+  icon,
+  screenshots,
+  download_count,
+  lighthouse_score,
+  status,
+  validation_status,
+  submitted_by
+) VALUES
+(
+  'Todo Master',
+  'A beautiful and intuitive todo list app that helps you stay organized and productive',
+  'https://example.com/todo-master',
+  'Productivity',
+  'free',
+  '{"name": "Tech Solutions", "email": "contact@techsolutions.com", "website": "https://techsolutions.com"}',
+  'https://via.placeholder.com/512x512.png?text=Todo',
+  ARRAY['https://via.placeholder.com/1080x1920.png?text=Screenshot+1', 'https://via.placeholder.com/1080x1920.png?text=Screenshot+2'],
+  150,
+  '{"performance": 95, "accessibility": 98, "bestPractices": 92, "seo": 100, "pwa": 100}',
+  'active',
+  'approved',
+  (SELECT id FROM auth.users LIMIT 1)
+),
+(
+  'Game Zone',
+  'Discover and play amazing web games. No download required!',
+  'https://example.com/game-zone',
+  'Games',
+  'freemium',
+  '{"name": "Game Studios", "email": "hello@gamestudios.com"}',
+  'https://via.placeholder.com/512x512.png?text=Games',
+  ARRAY['https://via.placeholder.com/1080x1920.png?text=Game+1', 'https://via.placeholder.com/1080x1920.png?text=Game+2'],
+  500,
+  '{"performance": 90, "accessibility": 85, "bestPractices": 88, "seo": 92, "pwa": 95}',
+  'active',
+  'approved',
+  (SELECT id FROM auth.users LIMIT 1)
+),
+(
+  'Social Connect',
+  'Stay connected with friends and family. Share moments that matter.',
+  'https://example.com/social-connect',
+  'Social',
+  'free',
+  '{"name": "Connect Inc", "email": "support@connect.com", "website": "https://connect.com"}',
+  'https://via.placeholder.com/512x512.png?text=Social',
+  ARRAY['https://via.placeholder.com/1080x1920.png?text=Social+1'],
+  1200,
+  '{"performance": 88, "accessibility": 95, "bestPractices": 90, "seo": 95, "pwa": 98}',
+  'active',
+  'approved',
+  (SELECT id FROM auth.users LIMIT 1)
+),
+(
+  'Shop Smart',
+  'Your one-stop shop for everything you need. Great deals, fast delivery.',
+  'https://example.com/shop-smart',
+  'Shopping',
+  'free',
+  '{"name": "Smart Shop Co", "email": "info@smartshop.com"}',
+  'https://via.placeholder.com/512x512.png?text=Shop',
+  ARRAY['https://via.placeholder.com/1080x1920.png?text=Shop+1', 'https://via.placeholder.com/1080x1920.png?text=Shop+2', 'https://via.placeholder.com/1080x1920.png?text=Shop+3'],
+  800,
+  '{"performance": 92, "accessibility": 90, "bestPractices": 85, "seo": 98, "pwa": 92}',
+  'active',
+  'approved',
+  (SELECT id FROM auth.users LIMIT 1)
+),
+(
+  'Learn Hub',
+  'Access thousands of courses and learn new skills at your own pace',
+  'https://example.com/learn-hub',
+  'Education',
+  'subscription',
+  '{"name": "Education First", "email": "contact@learnhub.com", "website": "https://learnhub.com"}',
+  'https://via.placeholder.com/512x512.png?text=Learn',
+  ARRAY['https://via.placeholder.com/1080x1920.png?text=Course+1', 'https://via.placeholder.com/1080x1920.png?text=Course+2'],
+  350,
+  '{"performance": 94, "accessibility": 100, "bestPractices": 95, "seo": 100, "pwa": 100}',
+  'active',
+  'approved',
+  (SELECT id FROM auth.users LIMIT 1)
+);

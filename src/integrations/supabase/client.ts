@@ -18,26 +18,6 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     headers: {
       'X-Client-Info': 'supabase-js-web',
     },
-    fetch: async (url: RequestInfo | URL, options: RequestInit = {}) => {
-      // 10초 timeout 추가 (무한 로딩 방지)
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-      try {
-        // 기존 signal이 있으면 보존하면서 새 signal 연결
-        const originalSignal = options.signal;
-        if (originalSignal) {
-          originalSignal.addEventListener('abort', () => controller.abort());
-        }
-
-        return await fetch(url, {
-          ...options,
-          signal: controller.signal,
-        });
-      } finally {
-        clearTimeout(timeoutId);
-      }
-    },
   },
   db: {
     schema: 'public',
