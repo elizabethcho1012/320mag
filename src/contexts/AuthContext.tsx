@@ -271,29 +271,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setSession(currentSession);
           setUser(currentSession.user);
 
-          // 프로필 조회 및 생성
-          let userProfile = await fetchProfile(currentSession.user.id);
-          if (!userProfile && currentSession.user.email) {
-            const username = currentSession.user.user_metadata?.username ||
-                           currentSession.user.email.split('@')[0];
-            userProfile = await createProfile(
-              currentSession.user.id,
-              currentSession.user.email,
-              username
-            );
-          }
-
-          if (isMounted) {
-            setProfile(userProfile);
-            console.log('🔔 SIGNED_IN profile updated');
-          }
-
-          // SIGNED_IN이 초기 로딩 중에 발생한 경우 loading 해제
+          // SIGNED_IN이 초기 로딩 중에 발생한 경우 즉시 loading 해제
           if (!isInitialized) {
             isInitialized = true;
             setLoading(false);
             console.log('✅ SIGNED_IN processed (initial), loading=false');
           }
+
+          // 프로필 조회 및 생성 (백그라운드)
+          fetchProfile(currentSession.user.id).then(async (userProfile) => {
+            if (!isMounted) return;
+            if (!userProfile && currentSession.user.email) {
+              const username = currentSession.user.user_metadata?.username ||
+                             currentSession.user.email.split('@')[0];
+              userProfile = await createProfile(
+                currentSession.user.id,
+                currentSession.user.email,
+                username
+              );
+            }
+            if (isMounted) {
+              setProfile(userProfile);
+              console.log('🔔 SIGNED_IN profile updated');
+            }
+          }).catch(err => console.error('프로필 조회/생성 실패:', err));
+
           return;
         }
 
